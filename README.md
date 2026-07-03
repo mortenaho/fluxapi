@@ -2,6 +2,24 @@
 
 Offline desktop API client for **HTTP**, **GraphQL**, **WebSocket**, and **gRPC**. Built with Electron, React, MUI, and SQLite — no cloud account required.
 
+## Screenshots
+
+### GET — list products
+
+![GET request with JSON response](docs/screenshots/get-request.png)
+
+### POST — create a product
+
+![POST request with JSON body and 201 Created response](docs/screenshots/post-request.png)
+
+### DELETE — remove a product
+
+![DELETE request with 200 OK response](docs/screenshots/delete-request.png)
+
+### Environments — manage variables
+
+![Environments dialog with active environment and {{variable}} substitution](docs/screenshots/environments.png)
+
 ---
 
 ## Features
