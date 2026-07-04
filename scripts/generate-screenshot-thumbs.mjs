@@ -37,10 +37,11 @@ for (const frame of tour.frames) {
 
 if (gifFrames.length >= 2 && tour.gif?.file) {
   const gifOut = path.join(shotsDir, tour.gif.file)
-  await sharp(gifFrames, { animated: true })
-    .gif({ loop: 0, delay: frameDelayMs })
+  const delays = Array(gifFrames.length).fill(frameDelayMs)
+  await sharp(gifFrames, { join: { animated: true } })
+    .gif({ loop: 0, delay: delays, keepDuplicateFrames: true })
     .toFile(gifOut)
-  console.log(`Wrote ${path.relative(root, gifOut)} (${gifFrames.length} frames)`)
+  console.log(`Wrote ${path.relative(root, gifOut)} (${gifFrames.length} frames, ${frameDelayMs}ms each)`)
 } else {
   console.warn('Skipped GIF — need at least 2 frames')
 }

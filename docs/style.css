@@ -98,10 +98,14 @@ a:hover {
 }
 
 .hero {
-  padding: 5rem 0 4rem;
+  padding: 5rem 0 0;
   text-align: center;
   position: relative;
-  overflow: hidden;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 1;
 }
 
 .hero::before {
@@ -162,30 +166,56 @@ a:hover {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.85rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2.75rem;
 }
 
-.hero-tour {
+.hero-preview {
+  position: relative;
+  width: min(100%, 960px);
   margin: 0 auto;
-  max-width: 960px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+}
+
+.hero-preview-frame {
+  height: clamp(280px, 38vw, 420px);
   overflow: hidden;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
   background: var(--bg-card);
   box-shadow: var(--shadow);
 }
 
-.hero-tour-gif {
+.hero-preview-gif {
   display: block;
   width: 100%;
   height: auto;
+  vertical-align: top;
 }
 
-.hero-tour figcaption {
-  padding: 0.75rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  border-top: 1px solid var(--border);
+.hero-preview-fade {
+  height: clamp(96px, 14vw, 140px);
+  margin-top: -1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(11, 15, 23, 0.55) 42%,
+    var(--bg) 100%
+  );
+  pointer-events: none;
+}
+
+.features-section {
+  padding-top: 0.5rem;
+  margin-top: -0.5rem;
+}
+
+.features-section .section-title {
+  text-align: center;
+}
+
+.features-section .section-lead {
+  margin-inline: auto;
+  text-align: center;
 }
 
 .btn {
