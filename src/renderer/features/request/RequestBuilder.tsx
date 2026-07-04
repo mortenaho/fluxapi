@@ -260,6 +260,7 @@ function RequestBuilderForm({
               ))}
             </Select>
             <VariableInput
+              syncKey={request.id}
               value={request.url}
               onChange={patchUrl}
               placeholder="https://api.example.com or {{baseUrl}}/path"

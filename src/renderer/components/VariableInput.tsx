@@ -11,7 +11,7 @@ import {
 } from '@mui/material'
 import type { Theme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { KeyValue } from '@shared/types'
 import { useShallow } from 'zustand/react/shallow'
@@ -20,14 +20,12 @@ import {
   buildVariableMap,
   collectVariableNames,
   getAutocompleteContext,
-  getVariableAtIndex,
   parseVariableSegments,
-  resolveVariable,
   type VariableSegment
 } from '../utils/variables'
-import { applyControlledInputChange } from '../utils/inputSelection'
 
 const EMPTY_VARS: KeyValue[] = []
+const VARIABLE_CHIP_PAD_X = 2
 
 interface Props {
   value: string
@@ -35,17 +33,43 @@ interface Props {
   placeholder?: string
   collectionVariables?: KeyValue[]
   fullWidth?: boolean
+  /** Reset local text when the owning request/editor changes. */
+  syncKey?: string
 }
 
 const INPUT_PADDING = '4px 8px'
 
 let measureCanvas: HTMLCanvasElement | null = null
-function measureTextWidth(text: string, style: CSSStyleDeclaration): number {
+
+function measureTextRun(text: string, style: CSSStyleDeclaration, fontWeight: number | string): number {
+  if (!text) return 0
   if (!measureCanvas) measureCanvas = document.createElement('canvas')
   const ctx = measureCanvas.getContext('2d')
   if (!ctx) return 0
-  ctx.font = `${style.fontSize} ${style.fontFamily}`
-  return ctx.measureText(text).width
+  ctx.font = `${fontWeight} ${style.fontSize} ${style.fontFamily}`
+  const width = ctx.measureText(text).width
+  const fontSize = parseFloat(style.fontSize)
+  const letterSpacing = fontSize * 0.00938 * Math.max(0, text.length - 1)
+  return width + letterSpacing
+}
+
+function findVariableAtOffsetX(
+  segments: VariableSegment[],
+  style: CSSStyleDeclaration,
+  offsetX: number
+): { segment: VariableSegment; centerX: number } | null {
+  let x = 0
+  for (const seg of segments) {
+    const weight = seg.type === 'variable' ? 600 : 400
+    const runWidth = measureTextRun(seg.content, style, weight)
+    const extra = seg.type === 'variable' ? VARIABLE_CHIP_PAD_X : 0
+    const total = runWidth + extra
+    if (offsetX >= x && offsetX <= x + total) {
+      return seg.type === 'variable' ? { segment: seg, centerX: x + total / 2 } : null
+    }
+    x += total
+  }
+  return null
 }
 
 function variableColor(source: VariableSegment['source'], theme: Theme): string {
@@ -78,9 +102,12 @@ function VariableInput({
   onChange,
   placeholder,
   collectionVariables = [],
-  fullWidth = true
+  fullWidth = true,
+  syncKey
 }: Props) {
   const theme = useTheme()
+  const focusedRef = useRef(false)
+  const [text, setText] = useState(value)
   const { activeEnvId, activeEnvName, envVars } = useAppStore(
     useShallow((s) => {
       const env = s.environments.find((e) => e.isActive)
@@ -92,6 +119,15 @@ function VariableInput({
     })
   )
   const loadEnvironments = useAppStore((s) => s.loadEnvironments)
+
+  useEffect(() => {
+    if (!focusedRef.current) setText(value)
+  }, [value])
+
+  useEffect(() => {
+    setText(value)
+    focusedRef.current = false
+  }, [syncKey])
 
   const inputRef = useRef<HTMLInputElement>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
@@ -105,8 +141,8 @@ function VariableInput({
   const envVarsList = envVars
   const varMap = useMemo(() => buildVariableMap(envVarsList, collectionVariables), [envVarsList, collectionVariables])
   const segments = useMemo(
-    () => parseVariableSegments(value, envVarsList, collectionVariables),
-    [value, envVarsList, collectionVariables]
+    () => parseVariableSegments(text, envVarsList, collectionVariables),
+    [text, envVarsList, collectionVariables]
   )
 
   const suggestions = useMemo(() => {
@@ -138,7 +174,7 @@ function VariableInput({
       return
     }
     const pos = input.selectionStart ?? 0
-    const ctx = getAutocompleteContext(value, pos)
+    const ctx = getAutocompleteContext(text, pos)
     setAcContext(ctx)
     if (!ctx) {
       setAcOpen(false)
@@ -150,7 +186,7 @@ function VariableInput({
     const hasCreate = !!ctx.query && !matches.some((n) => n === ctx.query) && !!activeEnvId
     setAcOpen(matches.length > 0 || hasCreate)
     setAcIndex(0)
-  }, [focused, value, envVarsList, collectionVariables, activeEnvId])
+  }, [focused, text, envVarsList, collectionVariables, activeEnvId])
 
   const syncScroll = useCallback(() => {
     if (highlightRef.current && inputRef.current) {
@@ -161,9 +197,10 @@ function VariableInput({
   const insertVariable = useCallback(
     (name: string) => {
       if (!acContext) return
-      const before = value.slice(0, acContext.replaceStart)
-      const after = value.slice(acContext.replaceEnd)
+      const before = text.slice(0, acContext.replaceStart)
+      const after = text.slice(acContext.replaceEnd)
       const next = `${before}${name}}}${after}`
+      setText(next)
       onChange(next)
       setAcOpen(false)
       const newCursor = before.length + name.length + 2
@@ -173,7 +210,7 @@ function VariableInput({
         refreshAutocomplete()
       })
     },
-    [acContext, onChange, value, refreshAutocomplete]
+    [acContext, onChange, text, refreshAutocomplete]
   )
 
   const createAndInsertVariable = useCallback(
@@ -196,29 +233,19 @@ function VariableInput({
   )
 
   const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (!focused) return
     const input = inputRef.current
     if (!input) return
     const rect = input.getBoundingClientRect()
     const style = window.getComputedStyle(input)
     const padL = parseFloat(style.paddingLeft)
-    const x = e.clientX - rect.left - padL + input.scrollLeft
-    let low = 0
-    let high = value.length
-    while (low < high) {
-      const mid = Math.ceil((low + high) / 2)
-      if (measureTextWidth(value.slice(0, mid), style) <= x) low = mid
-      else high = mid - 1
-    }
-    const variable = getVariableAtIndex(value, low)
-    if (variable) {
-      const full = segments.find((s) => s.type === 'variable' && s.name === variable.name)
-      if (full) setHoverSegment(full)
-      else {
-        const r = resolveVariable(variable.name!, envVarsList, collectionVariables)
-        setHoverSegment({ ...variable, source: r.source, resolvedValue: r.value })
-      }
-      setTooltipAnchor({ x: e.clientX, y: rect.bottom })
+    const offsetX = e.clientX - rect.left - padL + input.scrollLeft
+    const hit = findVariableAtOffsetX(segments, style, offsetX)
+    if (hit) {
+      setHoverSegment(hit.segment)
+      setTooltipAnchor({
+        x: rect.left + padL + hit.centerX - input.scrollLeft,
+        y: rect.bottom
+      })
     } else {
       setHoverSegment(null)
       setTooltipAnchor(null)
@@ -275,7 +302,7 @@ function VariableInput({
             color: 'text.primary'
           }}
         >
-          {value ? (
+          {text ? (
             segments.map((seg, i) =>
               seg.type === 'variable' ? (
                 <Box
@@ -305,14 +332,20 @@ function VariableInput({
         <InputBase
           inputRef={inputRef}
           fullWidth
-          value={value}
+          value={text}
           placeholder=""
           onChange={(e) => {
-            applyControlledInputChange(e.target, value, e.target.value, onChange)
+            const next = e.target.value
+            setText(next)
+            onChange(next)
             requestAnimationFrame(refreshAutocomplete)
           }}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            focusedRef.current = true
+            setFocused(true)
+          }}
           onBlur={() => {
+            focusedRef.current = false
             setFocused(false)
             setTimeout(() => setAcOpen(false), 150)
             setHoverSegment(null)
@@ -350,6 +383,7 @@ function VariableInput({
             position: 'fixed',
             top: tooltipAnchor.y + 6,
             left: tooltipAnchor.x,
+            transform: 'translateX(-50%)',
             zIndex: 1400,
             px: 1.5,
             py: 1,
