@@ -289,7 +289,7 @@ section {
 }
 
 .install-note {
-  margin-top: 1.25rem;
+  margin: 1.5rem 0 0 !important;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   line-height: 1.5;
