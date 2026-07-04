@@ -17,8 +17,8 @@ import {
   reflectGrpc,
   getProtoServices
 } from '../services/grpc.service'
-import { importPostman, exportPostman } from '../services/import.service'
-import { importOpenApi, listOpenApiSpecs, deleteOpenApiSpec, exportToOpenApi, getOpenApiPaths, generateRequestFromSpec } from '../services/openapi.service'
+import { importPostman, importPostmanFromUrl, importInsomnia, importInsomniaFromUrl, exportPostman } from '../services/import.service'
+import { importOpenApi, importOpenApiFromUrl, listOpenApiSpecs, deleteOpenApiSpec, exportToOpenApi, getOpenApiPaths, generateRequestFromSpec } from '../services/openapi.service'
 import { parseCurl, exportToCurl } from '../services/curl.service'
 import {
   clearCookieJar,
@@ -173,7 +173,11 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('history:clear', () => clearHistory())
 
   ipcMain.handle('import:postman', (_, filePath) => importPostman(filePath))
+  ipcMain.handle('import:postmanUrl', (_, url) => importPostmanFromUrl(url))
   ipcMain.handle('import:openapi', (_, filePath) => importOpenApi(filePath))
+  ipcMain.handle('import:openapiUrl', (_, url) => importOpenApiFromUrl(url))
+  ipcMain.handle('import:insomnia', (_, filePath) => importInsomnia(filePath))
+  ipcMain.handle('import:insomniaUrl', (_, url) => importInsomniaFromUrl(url))
   ipcMain.handle('import:curl', (_, curlString, collectionId?) => {
     const parsed = parseCurl(curlString)
     return saveRequest({ ...createEmptyRequest(collectionId ?? null), ...parsed })

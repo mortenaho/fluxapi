@@ -6,29 +6,53 @@ import YAML from 'yaml'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import type { KeyValue, OpenApiSpecModel, RequestModel } from '../../../shared/types'
 import { saveRequest } from './repository'
+import { fetchImportSource, type ImportFormatHint } from './fetch-import.service'
+
+function parseImportContent(content: string, formatHint: ImportFormatHint = 'unknown'): unknown {
+  if (formatHint === 'yaml') return YAML.parse(content)
+  if (formatHint === 'json') return JSON.parse(content)
+  const trimmed = content.trim()
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return JSON.parse(content)
+  return YAML.parse(content)
+}
 
 function parseFileContent(filePath: string): unknown {
   const content = readFileSync(filePath, 'utf-8')
-  if (filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
-    return YAML.parse(content)
-  }
-  return JSON.parse(content)
+  const formatHint: ImportFormatHint =
+    filePath.endsWith('.yaml') || filePath.endsWith('.yml') ? 'yaml' : 'json'
+  return parseImportContent(content, formatHint)
 }
 
-export async function importOpenApi(filePath: string): Promise<{
+export function importOpenApi(filePath: string) {
+  const content = readFileSync(filePath, 'utf-8')
+  const formatHint: ImportFormatHint =
+    filePath.endsWith('.yaml') || filePath.endsWith('.yml') ? 'yaml' : 'json'
+  return importOpenApiFromContent(content, basename(filePath), filePath, formatHint)
+}
+
+export async function importOpenApiFromUrl(url: string) {
+  const fetched = await fetchImportSource(url)
+  return importOpenApiFromContent(fetched.content, fetched.sourceLabel, url, fetched.formatHint)
+}
+
+export async function importOpenApiFromContent(
+  content: string,
+  sourceName: string,
+  sourcePath: string,
+  formatHint: ImportFormatHint = 'unknown'
+): Promise<{
   collectionId: string
   specId: string
   count: number
 }> {
-  const raw = parseFileContent(filePath)
+  const raw = parseImportContent(content, formatHint)
   const api = await SwaggerParser.validate(raw as Parameters<typeof SwaggerParser.validate>[0])
-  const content = readFileSync(filePath, 'utf-8')
   const specId = uuidv4()
   const collectionId = uuidv4()
   const now = Date.now()
 
   const isSwagger2 = !!(api as { swagger?: string }).swagger
-  const title = (api as { info?: { title?: string; version?: string } }).info?.title || basename(filePath)
+  const title = (api as { info?: { title?: string; version?: string } }).info?.title || sourceName
   const version = (api as { info?: { title?: string; version?: string } }).info?.version || '1.0'
 
   let servers: string[] = []
@@ -42,7 +66,7 @@ export async function importOpenApi(filePath: string): Promise<{
 
   runQuery(
     'INSERT INTO openapi_specs (id, name, file_path, format, content, title, version, servers_json, imported_at) VALUES (?,?,?,?,?,?,?,?,?)',
-    [specId, basename(filePath), filePath, isSwagger2 ? 'swagger2' : 'openapi3', content, title, version, JSON.stringify(servers), now]
+    [specId, sourceName, sourcePath, isSwagger2 ? 'swagger2' : 'openapi3', content, title, version, JSON.stringify(servers), now]
   )
 
   runQuery(

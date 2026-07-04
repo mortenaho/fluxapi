@@ -30,7 +30,7 @@ interface AppState {
   settings: Settings
   snippetOpen: boolean
   importDialogOpen: boolean
-  importType: 'postman' | 'openapi' | 'curl' | null
+  importType: 'postman' | 'openapi' | 'insomnia' | 'curl' | null
   curlPaste: string
   searchQuery: string
 

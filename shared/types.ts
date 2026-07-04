@@ -252,7 +252,11 @@ export interface FluxAPI {
   }
   import: {
     postman: (filePath: string) => Promise<{ collectionId: string; count: number }>
+    postmanFromUrl: (url: string) => Promise<{ collectionId: string; count: number }>
     openapi: (filePath: string) => Promise<{ collectionId: string; specId: string; count: number }>
+    openapiFromUrl: (url: string) => Promise<{ collectionId: string; specId: string; count: number }>
+    insomnia: (filePath: string) => Promise<{ collectionId: string; count: number }>
+    insomniaFromUrl: (url: string) => Promise<{ collectionId: string; count: number }>
     curl: (curlString: string, collectionId?: string | null) => Promise<RequestModel>
   }
   export: {

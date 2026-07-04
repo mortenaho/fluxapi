@@ -30,7 +30,11 @@ const fluxAPI: FluxAPI = {
   },
   import: {
     postman: (filePath) => ipcRenderer.invoke('import:postman', filePath),
+    postmanFromUrl: (url) => ipcRenderer.invoke('import:postmanUrl', url),
     openapi: (filePath) => ipcRenderer.invoke('import:openapi', filePath),
+    openapiFromUrl: (url) => ipcRenderer.invoke('import:openapiUrl', url),
+    insomnia: (filePath) => ipcRenderer.invoke('import:insomnia', filePath),
+    insomniaFromUrl: (url) => ipcRenderer.invoke('import:insomniaUrl', url),
     curl: (curlString, collectionId?) => ipcRenderer.invoke('import:curl', curlString, collectionId)
   },
   export: {

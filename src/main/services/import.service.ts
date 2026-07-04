@@ -1,8 +1,10 @@
 import { readFileSync, writeFileSync } from 'fs'
+import { basename } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { getAll, getOne, runQuery } from '../db'
 import type { AuthConfig, AuthType, KeyValue, RequestModel } from '../../../shared/types'
 import { rowToRequest, saveRequest } from './repository'
+import { fetchImportSource } from './fetch-import.service'
 
 interface PostmanItem {
   name: string
@@ -27,8 +29,64 @@ interface PostmanItem {
   event?: { listen: string; script: { exec: string[] } }[]
 }
 
+interface PostmanCollection {
+  info?: { name?: string; schema?: string }
+  item?: PostmanItem[]
+  variable?: { key: string; value: string }[]
+}
+
+interface InsomniaResource {
+  _type: string
+  _id: string
+  parentId?: string | null
+  name?: string
+  metaSortKey?: number
+  method?: string
+  url?: string
+  body?: { mimeType?: string; text?: string }
+  headers?: { name: string; value: string; disabled?: boolean }[]
+  parameters?: { name: string; value: string; disabled?: boolean }[]
+  authentication?: {
+    type?: string
+    token?: string
+    username?: string
+    password?: string
+    key?: string
+    value?: string
+    addTo?: string
+  }
+}
+
+function parseJsonContent(content: string, label: string): unknown {
+  try {
+    return JSON.parse(content)
+  } catch {
+    throw new Error(`Invalid JSON in ${label}`)
+  }
+}
+
 export function importPostman(filePath: string): { collectionId: string; count: number } {
-  const content = JSON.parse(readFileSync(filePath, 'utf-8'))
+  return importPostmanFromContent(readFileSync(filePath, 'utf-8'), basename(filePath))
+}
+
+export async function importPostmanFromUrl(url: string): Promise<{ collectionId: string; count: number }> {
+  const fetched = await fetchImportSource(url)
+  return importPostmanFromContent(fetched.content, fetched.sourceLabel)
+}
+
+export function importPostmanFromContent(
+  content: string,
+  sourceName: string
+): { collectionId: string; count: number } {
+  const parsed = parseJsonContent(content, sourceName)
+  if (isInsomniaExport(parsed)) {
+    throw new Error('This URL points to an Insomnia export. Use Import → Insomnia instead.')
+  }
+  if (!isPostmanCollection(parsed)) {
+    throw new Error('Not a valid Postman Collection v2.1 export')
+  }
+
+  const data = parsed as PostmanCollection
   const rootId = uuidv4()
   const now = Date.now()
   let count = 0
@@ -37,11 +95,11 @@ export function importPostman(filePath: string): { collectionId: string; count: 
     'INSERT INTO collections (id, name, parent_id, sort_order, variables_json, created_at) VALUES (?,?,?,?,?,?)',
     [
       rootId,
-      content.info?.name || 'Imported Collection',
+      data.info?.name || sourceName || 'Imported Collection',
       null,
       0,
       JSON.stringify(
-        (content.variable || []).map((v: { key: string; value: string }, i: number) => ({
+        (data.variable || []).map((v, i) => ({
           id: String(i),
           key: v.key,
           value: v.value,
@@ -69,8 +127,185 @@ export function importPostman(filePath: string): { collectionId: string; count: 
     }
   }
 
-  processItems(content.item || [], rootId)
+  processItems(data.item || [], rootId)
   return { collectionId: rootId, count }
+}
+
+export function importInsomnia(filePath: string): { collectionId: string; count: number } {
+  return importInsomniaFromContent(readFileSync(filePath, 'utf-8'), basename(filePath))
+}
+
+export async function importInsomniaFromUrl(url: string): Promise<{ collectionId: string; count: number }> {
+  const fetched = await fetchImportSource(url)
+  return importInsomniaFromContent(fetched.content, fetched.sourceLabel)
+}
+
+export function importInsomniaFromContent(
+  content: string,
+  sourceName: string
+): { collectionId: string; count: number } {
+  const parsed = parseJsonContent(content, sourceName)
+  if (!isInsomniaExport(parsed)) {
+    throw new Error('Not a valid Insomnia export')
+  }
+
+  const data = parsed as { resources?: InsomniaResource[] }
+  const resources = data.resources || []
+  const workspace = resources.find((r) => r._type === 'workspace')
+  const rootId = uuidv4()
+  const now = Date.now()
+  const idMap = new Map<string, string>()
+
+  if (workspace?._id) idMap.set(workspace._id, rootId)
+
+  runQuery(
+    'INSERT INTO collections (id, name, parent_id, sort_order, variables_json, created_at) VALUES (?,?,?,?,?,?)',
+    [rootId, workspace?.name || sourceName || 'Imported Insomnia', null, 0, '[]', now]
+  )
+
+  const groups = resources
+    .filter((r) => r._type === 'request_group')
+    .sort((a, b) => (a.metaSortKey ?? 0) - (b.metaSortKey ?? 0))
+
+  const pending = [...groups]
+  while (pending.length > 0) {
+    let progressed = false
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const group = pending[i]
+      const parentKey = group.parentId || workspace?._id
+      if (!parentKey || idMap.has(parentKey)) {
+        const folderId = uuidv4()
+        idMap.set(group._id, folderId)
+        runQuery(
+          'INSERT INTO collections (id, name, parent_id, sort_order, variables_json, created_at) VALUES (?,?,?,?,?,?)',
+          [folderId, group.name || 'Folder', idMap.get(parentKey!) ?? rootId, i, '[]', now]
+        )
+        pending.splice(i, 1)
+        progressed = true
+      }
+    }
+    if (!progressed) {
+      for (const group of pending) {
+        const folderId = uuidv4()
+        idMap.set(group._id, folderId)
+        runQuery(
+          'INSERT INTO collections (id, name, parent_id, sort_order, variables_json, created_at) VALUES (?,?,?,?,?,?)',
+          [folderId, group.name || 'Folder', rootId, 0, '[]', now]
+        )
+      }
+      break
+    }
+  }
+
+  const requests = resources
+    .filter((r) => r._type === 'request')
+    .sort((a, b) => (a.metaSortKey ?? 0) - (b.metaSortKey ?? 0))
+
+  let count = 0
+  for (let i = 0; i < requests.length; i++) {
+    const req = requests[i]
+    const parentId = idMap.get(req.parentId || workspace?._id || '') ?? rootId
+    saveRequest(mapInsomniaRequest(req, parentId, i, now))
+    count++
+  }
+
+  return { collectionId: rootId, count }
+}
+
+function isPostmanCollection(data: unknown): data is PostmanCollection {
+  if (typeof data !== 'object' || !data) return false
+  const d = data as PostmanCollection
+  return !!(d.info?.schema?.includes('postman.com') || Array.isArray(d.item))
+}
+
+function isInsomniaExport(data: unknown): boolean {
+  if (typeof data !== 'object' || !data) return false
+  const d = data as { __export_format?: number; resources?: InsomniaResource[] }
+  if (d.__export_format !== undefined) return true
+  return Array.isArray(d.resources) && d.resources.some((r) => r._type === 'request' || r._type === 'workspace')
+}
+
+function mapInsomniaRequest(
+  item: InsomniaResource,
+  collectionId: string,
+  sortOrder: number,
+  now: number
+): RequestModel {
+  const headers: KeyValue[] = (item.headers || []).map((h, i) => ({
+    id: String(i),
+    key: h.name,
+    value: h.value,
+    enabled: !h.disabled
+  }))
+
+  const params: KeyValue[] = (item.parameters || []).map((p, i) => ({
+    id: String(i),
+    key: p.name,
+    value: p.value,
+    enabled: !p.disabled
+  }))
+
+  let bodyType: RequestModel['bodyType'] = 'none'
+  let bodyRaw = ''
+  let bodyRawContentType = 'application/json'
+
+  if (item.body?.text) {
+    bodyType = 'raw'
+    bodyRaw = item.body.text
+    bodyRawContentType = item.body.mimeType || 'text/plain'
+  }
+
+  let authType: AuthType = 'none'
+  const auth: AuthConfig = {}
+  const a = item.authentication
+  if (a?.type === 'bearer') {
+    authType = 'bearer'
+    auth.bearerToken = a.token || ''
+  } else if (a?.type === 'basic') {
+    authType = 'basic'
+    auth.basicUsername = a.username || ''
+    auth.basicPassword = a.password || ''
+  } else if (a?.type === 'apikey') {
+    authType = 'apikey'
+    auth.apiKeyKey = a.key || ''
+    auth.apiKeyValue = a.value || ''
+    auth.apiKeyIn = a.addTo === 'queryParams' ? 'query' : 'header'
+  }
+
+  return {
+    id: uuidv4(),
+    collectionId,
+    name: item.name || 'Imported Request',
+    method: (item.method?.toUpperCase() || 'GET') as RequestModel['method'],
+    url: item.url || '',
+    headers,
+    params,
+    bodyType,
+    bodyRaw,
+    bodyRawContentType,
+    formData: [],
+    urlEncoded: [],
+    authType,
+    auth,
+    preRequestScript: '',
+    testScript: '',
+    protocol: 'http',
+    graphqlQuery: '',
+    graphqlVariables: '{}',
+    wsUrl: '',
+    wsMessages: [],
+    grpcTarget: '',
+    grpcService: '',
+    grpcMethod: '',
+    grpcCallType: 'unary',
+    grpcProtoId: null,
+    grpcMetadata: [],
+    grpcMessage: '{}',
+    sortOrder,
+    pinned: false,
+    createdAt: now,
+    updatedAt: now
+  }
 }
 
 function mapPostmanRequest(item: PostmanItem, collectionId: string, sortOrder: number, now: number): RequestModel {
