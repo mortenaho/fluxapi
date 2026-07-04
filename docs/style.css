@@ -173,13 +173,14 @@ a:hover {
   position: relative;
   width: min(100%, 960px);
   margin: 0 auto;
+  padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
 }
 
 .hero-preview-frame {
-  height: clamp(280px, 38vw, 420px);
+  position: relative;
+  height: clamp(300px, 40vw, 440px);
   overflow: hidden;
   border: 1px solid var(--border);
-  border-bottom: none;
   border-radius: var(--radius) var(--radius) 0 0;
   background: var(--bg-card);
   box-shadow: var(--shadow);
@@ -193,20 +194,25 @@ a:hover {
 }
 
 .hero-preview-fade {
-  height: clamp(96px, 14vw, 140px);
-  margin-top: -1px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58%;
   background: linear-gradient(
     to bottom,
-    transparent 0%,
-    rgba(11, 15, 23, 0.55) 42%,
+    rgba(11, 15, 23, 0) 0%,
+    rgba(11, 15, 23, 0.25) 22%,
+    rgba(11, 15, 23, 0.72) 52%,
     var(--bg) 100%
   );
   pointer-events: none;
+  z-index: 1;
 }
 
 .features-section {
-  padding-top: 0.5rem;
-  margin-top: -0.5rem;
+  padding-top: 0;
+  margin-top: 0;
 }
 
 .features-section .section-title {
