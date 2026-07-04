@@ -9,7 +9,7 @@ on:
       tag:
         description: 'Release tag to upload assets to'
         required: true
-        default: 'v1.1.0'
+        default: 'v1.2.4'
 
 permissions:
   contents: write
@@ -40,6 +40,18 @@ jobs:
           if (-not $installer) { throw 'Installer not found in dist-installer/' }
           Copy-Item $installer.FullName dist-installer/Lisek-Setup.exe -Force
           Get-ChildItem dist-installer/*.exe | Format-Table Name, Length
+
+      - name: Create GitHub Release (if needed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        shell: pwsh
+        run: |
+          $tag = $env:RELEASE_TAG
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --generate-notes --title $tag
+          }
 
       - name: Upload to GitHub Release
         env:
