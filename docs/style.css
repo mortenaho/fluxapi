@@ -172,18 +172,46 @@ a:hover {
 .hero-preview {
   position: relative;
   width: min(100%, 960px);
-  margin: 0 auto;
-  padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  margin: 0 auto -2rem;
+}
+
+.hero-preview::before {
+  content: "";
+  position: absolute;
+  inset: 8% 10% 0;
+  background: radial-gradient(ellipse at 50% 20%, rgba(99, 102, 241, 0.14), transparent 72%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .hero-preview-frame {
   position: relative;
-  height: clamp(300px, 40vw, 440px);
+  height: clamp(320px, 42vw, 460px);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: none;
   border-radius: var(--radius) var(--radius) 0 0;
-  background: var(--bg-card);
-  box-shadow: var(--shadow);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 64%,
+    rgba(0, 0, 0, 0.92) 74%,
+    rgba(0, 0, 0, 0.72) 82%,
+    rgba(0, 0, 0, 0.42) 90%,
+    rgba(0, 0, 0, 0.12) 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 64%,
+    rgba(0, 0, 0, 0.92) 74%,
+    rgba(0, 0, 0, 0.72) 82%,
+    rgba(0, 0, 0, 0.42) 90%,
+    rgba(0, 0, 0, 0.12) 96%,
+    transparent 100%
+  );
 }
 
 .hero-preview-gif {
@@ -193,25 +221,8 @@ a:hover {
   vertical-align: top;
 }
 
-.hero-preview-fade {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 58%;
-  background: linear-gradient(
-    to bottom,
-    rgba(11, 15, 23, 0) 0%,
-    rgba(11, 15, 23, 0.25) 22%,
-    rgba(11, 15, 23, 0.72) 52%,
-    var(--bg) 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
 .features-section {
-  padding-top: 0;
+  padding-top: 2.5rem;
   margin-top: 0;
 }
 
