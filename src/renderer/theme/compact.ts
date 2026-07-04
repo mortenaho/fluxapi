@@ -13,7 +13,7 @@ export const COMPACT = {
     textTransform: 'none' as const,
     fontWeight: 500
   },
-  panel: { m: 0.5, borderRadius: 0.75 },
+  panel: { mt: 1.25, mx: 0.5, mb: 0.5, borderRadius: 0.75 },
   input: {
     '& .MuiInputBase-root': { height: 28, py: 0 },
     '& .MuiInputBase-input': { py: 0.375, px: 0.75, fontSize: 11 }

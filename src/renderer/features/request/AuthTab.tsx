@@ -33,7 +33,7 @@ export default function AuthTab() {
   const selected = AUTH_OPTIONS.find((o) => o.value === authType)
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', pt: 0.75 }}>
       <ToggleButtonGroup
         exclusive
         size="small"
@@ -44,7 +44,7 @@ export default function AuthTab() {
           width: '100%',
           flexWrap: 'wrap',
           gap: 0.25,
-          mb: 0.75,
+          mb: 1.25,
           '& .MuiToggleButtonGroup-grouped': {
             border: 1,
             borderColor: 'divider',
@@ -74,7 +74,7 @@ export default function AuthTab() {
             <Typography sx={COMPACT.caption}>{selected.hint}</Typography>
           </Box>
 
-          <Box sx={{ p: 0.75, display: 'flex', flexDirection: 'column', gap: 0.75, width: '100%' }}>
+          <Box sx={{ pt: 1, px: 0.75, pb: 0.75, display: 'flex', flexDirection: 'column', gap: 0.75, width: '100%' }}>
             {authType === 'bearer' && (
               <TextField
                 fullWidth

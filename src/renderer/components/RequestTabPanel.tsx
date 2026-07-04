@@ -15,6 +15,7 @@ function RequestTabPanel({ children, sx, ...rest }: Props) {
         borderRadius: '0 0 6px 6px',
         bgcolor: 'background.paper',
         p: 0.75,
+        pt: 1.25,
         minHeight: 140,
         ...sx
       }}
