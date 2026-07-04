@@ -23,11 +23,13 @@ import SearchIcon from '@mui/icons-material/Search'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import WrapTextIcon from '@mui/icons-material/WrapText'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import Editor from '@monaco-editor/react'
 import type { HttpResponse, KeyValue } from '@shared/types'
 import { useAppStore } from '../../stores/appStore'
+import JsonPathHelpDialog from './JsonPathHelpDialog'
 import {
   detectResponseBody,
   formatQueryResult,
@@ -169,6 +171,7 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
   const [jsonQuery, setJsonQuery] = useState('')
   const [queryResult, setQueryResult] = useState<string | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
     setJsonQuery('')
@@ -188,19 +191,36 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
     setQueryResult(formatQueryResult(outcome.result))
   }, [data, jsonQuery])
 
+  const useExample = useCallback((query: string) => {
+    setJsonQuery(query)
+    setQueryError(null)
+    setQueryResult(null)
+  }, [])
+
   return (
     <Box sx={{ p: 1, flexShrink: 0, bgcolor: 'action.hover' }}>
-      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+      <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+          JSONPath
+        </Typography>
+        <Tooltip title="JSONPath help">
+          <IconButton size="small" onClick={() => setHelpOpen(true)} aria-label="JSONPath help">
+            <HelpOutlineIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
         <TextField
           size="small"
           fullWidth
-          placeholder="JSONPath — data.items[0].name | $..id | $.data[*].name"
+          placeholder="$.data.items[0].name"
           value={jsonQuery}
           onChange={(e) => setJsonQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') runQuery()
           }}
           sx={{ bgcolor: 'background.paper' }}
+          slotProps={{
+            input: { sx: { fontFamily: 'Consolas, monospace', fontSize: 13 } }
+          }}
         />
         <Button
           size="small"
@@ -241,6 +261,11 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
           </Box>
         </Box>
       )}
+      <JsonPathHelpDialog
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onUseExample={useExample}
+      />
     </Box>
   )
 })

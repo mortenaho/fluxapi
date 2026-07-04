@@ -27,6 +27,9 @@ import LockIcon from '@mui/icons-material/Lock'
 import CodeIcon from '@mui/icons-material/Code'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import CodeEditor from '../../components/CodeEditor'
+import ContentTypeSelect from '../../components/ContentTypeSelect'
+import { effectiveContentType, isJsonContentType, languageForContentType } from '../../utils/contentTypes'
+import { readContentTypeHeader, upsertContentTypeHeader } from '../../utils/requestHeaders'
 import { useAppStore } from '../../stores/appStore'
 import { RequestEditorProvider, useRequestEditor } from '../../contexts/RequestEditorContext'
 import KeyValueEditor from '../../components/KeyValueEditor'
@@ -53,13 +56,6 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const PROTOCOLS: Protocol[] = ['http', 'graphql', 'websocket', 'grpc']
 const EMPTY_VARS: KeyValue[] = []
-
-const CONTENT_TYPE_PRESETS = [
-  { label: 'JSON', value: 'application/json' },
-  { label: 'Text', value: 'text/plain' },
-  { label: 'HTML', value: 'text/html' },
-  { label: 'XML', value: 'application/xml' }
-] as const
 
 type RequestSection = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'protocol'
 
@@ -163,10 +159,33 @@ function RequestBuilderForm({
 
   const patchUrl = useCallback((url: string) => patch({ url }), [patch])
   const patchParams = useCallback((params: KeyValue[]) => patch({ params }), [patch])
-  const patchHeaders = useCallback((headers: KeyValue[]) => patch({ headers }), [patch])
+  const patchHeaders = useCallback(
+    (headers: KeyValue[]) => {
+      const contentType = readContentTypeHeader(headers)
+      patch({
+        headers,
+        ...(request.bodyType === 'raw' && contentType !== undefined
+          ? { bodyRawContentType: contentType }
+          : {})
+      })
+    },
+    [patch, request.bodyType]
+  )
   const patchFormData = useCallback((formData: KeyValue[]) => patch({ formData }), [patch])
   const patchUrlEncoded = useCallback((urlEncoded: KeyValue[]) => patch({ urlEncoded }), [patch])
   const patchBodyRaw = useCallback((bodyRaw: string) => patch({ bodyRaw }), [patch])
+  const patchBodyContentType = useCallback(
+    (bodyRawContentType: string) => {
+      patch({
+        bodyRawContentType,
+        headers: upsertContentTypeHeader(request.headers, bodyRawContentType)
+      })
+    },
+    [patch, request.headers]
+  )
+
+  const contentTypeValue = effectiveContentType(request.bodyType, request.bodyRawContentType)
+  const showContentTypeInHeaders = request.bodyType !== 'none'
 
   const formatBodyJson = useCallback(() => {
     const raw = request.bodyRaw.trim()
@@ -183,7 +202,8 @@ function RequestBuilderForm({
     }
   }, [request.bodyRaw, patch])
 
-  const isJsonBody = request.bodyRawContentType.toLowerCase().includes('json')
+  const isJsonBody = isJsonContentType(request.bodyRawContentType)
+  const bodyLanguage = languageForContentType(request.bodyRawContentType)
 
   return (
     <Box sx={{ p: 2 }} onKeyDown={handleKeyDown}>
@@ -323,15 +343,48 @@ function RequestBuilderForm({
         )}
 
         {section === 'headers' && (
-          <KeyValueEditor
-            items={request.headers}
-            onChange={patchHeaders}
-            description="HTTP headers sent with the request."
-            emptyTitle="No custom headers"
-            emptyHint="Add Content-Type, Accept, or custom headers"
-            keyPlaceholder="Header-Name"
-            valuePlaceholder="value or {{var}}"
-          />
+          <Box>
+            {showContentTypeInHeaders && (
+              <Box
+                sx={{
+                  mb: 2,
+                  pb: 2,
+                  borderBottom: 1,
+                  borderColor: 'divider'
+                }}
+              >
+                {request.bodyType === 'raw' ? (
+                  <ContentTypeSelect
+                    value={request.bodyRawContentType}
+                    onChange={patchBodyContentType}
+                  />
+                ) : (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                      Content-Type
+                    </Typography>
+                    <Chip
+                      label={contentTypeValue}
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontFamily: 'Consolas, monospace', fontSize: 12 }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                      {request.bodyType === 'form-data'
+                        ? 'Boundary is added automatically when sending'
+                        : 'Set by URL Encoded body type'}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+            <KeyValueEditor
+              items={request.headers}
+              onChange={patchHeaders}
+              keyPlaceholder="Header-Name"
+              valuePlaceholder="value or {{var}}"
+            />
+          </Box>
         )}
 
         {section === 'body' && (
@@ -388,49 +441,24 @@ function RequestBuilderForm({
 
             {request.bodyType === 'raw' && (
               <>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1.5, flexWrap: 'wrap' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
-                    Content-Type:
-                  </Typography>
-                  {CONTENT_TYPE_PRESETS.map((preset) => (
-                    <Chip
-                      key={preset.value}
-                      label={preset.label}
-                      size="small"
-                      variant={request.bodyRawContentType === preset.value ? 'filled' : 'outlined'}
-                      color={request.bodyRawContentType === preset.value ? 'primary' : 'default'}
-                      onClick={() => patch({ bodyRawContentType: preset.value })}
-                      sx={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                  <TextField
-                    size="small"
-                    placeholder="Custom content type"
-                    value={request.bodyRawContentType}
-                    onChange={(e) => patch({ bodyRawContentType: e.target.value })}
-                    sx={{ flex: 1, minWidth: 180 }}
-                  />
-                  {isJsonBody && (
-                    <Tooltip title="Format JSON (2-space indent)">
-                      <span>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<AutoFixHighIcon />}
-                          onClick={formatBodyJson}
-                          disabled={!request.bodyRaw.trim()}
-                        >
-                          Beautify
-                        </Button>
-                      </span>
+                {isJsonBody && (
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.75 }}>
+                    <Tooltip title="Format JSON">
+                      <IconButton
+                        size="small"
+                        onClick={formatBodyJson}
+                        disabled={!request.bodyRaw.trim()}
+                      >
+                        <AutoFixHighIcon fontSize="small" />
+                      </IconButton>
                     </Tooltip>
-                  )}
-                </Box>
+                  </Box>
+                )}
                 <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                   <CodeEditor
-                    editorKey={`${request.id}-body`}
+                    editorKey={`${request.id}-body-${bodyLanguage}`}
                     height="220px"
-                    language={isJsonBody ? 'json' : 'plaintext'}
+                    language={bodyLanguage}
                     value={request.bodyRaw}
                     onChange={patchBodyRaw}
                   />
