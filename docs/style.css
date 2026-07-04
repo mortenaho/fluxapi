@@ -111,9 +111,19 @@ a:hover {
 .hero::before {
   content: "";
   position: absolute;
-  inset: -20% 0 auto;
-  height: 420px;
-  background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.16), transparent 65%);
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(120%, 980px);
+  height: clamp(520px, 62vh, 700px);
+  background:
+    radial-gradient(
+      ellipse 95% 88% at 50% -6%,
+      rgba(34, 211, 238, 0.22) 0%,
+      rgba(59, 130, 246, 0.1) 32%,
+      rgba(99, 102, 241, 0.04) 52%,
+      transparent 72%
+    );
   pointer-events: none;
 }
 
