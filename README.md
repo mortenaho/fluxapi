@@ -196,7 +196,7 @@ Close any running FluxAPI/Electron instance first, then:
 npm run dist
 ```
 
-Output: `dist-installer/FluxAPI Setup 1.0.0.exe`
+Output: `dist-installer/FluxAPI Setup 1.1.0.exe`
 
 The build writes to a temp directory and copies the installer into `dist-installer/` via `scripts/post-dist.mjs`.
 
