@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to upload assets to'
+        required: true
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -25,17 +31,18 @@ jobs:
         run: npm ci
 
       - name: Build Windows installer
-        run: npm run dist
+        run: npm run dist:ci
 
       - name: Prepare stable download filename
         shell: pwsh
         run: |
-          $installer = Get-ChildItem dist-installer/*.exe | Select-Object -First 1
+          $installer = Get-ChildItem dist-installer/*.exe | Where-Object { $_.Name -ne 'FluxAPI-Setup.exe' } | Select-Object -First 1
           if (-not $installer) { throw 'Installer not found in dist-installer/' }
-          Copy-Item $installer.FullName dist-installer/FluxAPI-Setup.exe
+          Copy-Item $installer.FullName dist-installer/FluxAPI-Setup.exe -Force
+          Get-ChildItem dist-installer/*.exe | Format-Table Name, Length
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: dist-installer/*.exe
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: gh release upload "$env:RELEASE_TAG" dist-installer/FluxAPI-Setup.exe --clobber

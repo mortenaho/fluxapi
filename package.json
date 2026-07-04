@@ -10,6 +10,7 @@
     "build": "electron-vite build",
     "preview": "node scripts/brand-electron.mjs && electron-vite preview",
     "dist": "npm run build && node scripts/prep-dist.mjs && electron-builder --win --config.directories.output=%TEMP%\\fluxapi-dist && node scripts/post-dist.mjs",
+    "dist:ci": "npm run build && electron-builder --win -p never",
     "icons": "node scripts/build-icons.mjs && node scripts/brand-electron.mjs",
     "postinstall": "node scripts/brand-electron.mjs",
     "typecheck": "tsc --noEmit",
