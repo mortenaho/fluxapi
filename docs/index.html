@@ -9,7 +9,7 @@
   <meta property="og:title" content="Lisek — Offline API Client">
   <meta property="og:description" content="Test HTTP, GraphQL, WebSocket, and gRPC APIs locally. Collections, environments, scripts, and more.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="screenshots/get-request.png">
+  <meta property="og:image" content="screenshots/02-http-rest.png">
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <!-- Direct download: https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe -->
@@ -49,6 +49,18 @@
           <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Download for Windows</a>
           <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek">View on GitHub</a>
         </div>
+        <figure class="hero-tour">
+          <img
+            class="hero-tour-gif"
+            src="screenshots/lisek-tour.gif"
+            alt="Lisek product tour — collections, HTTP, GraphQL, WebSocket, gRPC, environments, scripts, and history"
+            width="960"
+            height="540"
+            loading="lazy"
+            decoding="async"
+          >
+          <figcaption>Collections · HTTP · GraphQL · WebSocket · gRPC · Environments · Scripts · History</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -93,62 +105,80 @@
             <h2 class="section-title">Screenshots</h2>
             <p class="section-lead gallery-lead">Click any shot to open the gallery — browse full-size images with keyboard arrows.</p>
           </div>
-          <span class="gallery-count">6 screens</span>
+          <span class="gallery-count">8 screens</span>
         </div>
 
         <div class="gallery-masonry">
-          <button type="button" class="gallery-card gallery-card--featured" data-full="screenshots/get-request.png" data-thumb="screenshots/thumbs/get-request.jpg" aria-label="Open GET request screenshot">
+          <button type="button" class="gallery-card gallery-card--featured" data-full="screenshots/02-http-rest.png" data-thumb="screenshots/thumbs/02-http-rest.jpg" aria-label="Open HTTP REST screenshot">
             <span class="gallery-card-num">01</span>
             <div class="gallery-card-media">
-              <img src="screenshots/thumbs/get-request.jpg" alt="GET request with JSON response" width="480" height="303" loading="lazy" decoding="async">
+              <img src="screenshots/thumbs/02-http-rest.jpg" alt="HTTP GET with JSON response" width="480" height="303" loading="lazy" decoding="async">
               <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
             </div>
-            <span class="gallery-card-caption">GET with environment variables and JSON response</span>
+            <span class="gallery-card-caption">HTTP GET with environment substitution and JSON response</span>
           </button>
 
-          <button type="button" class="gallery-card" data-full="screenshots/delete-request.png" data-thumb="screenshots/thumbs/delete-request.jpg" aria-label="Open DELETE request screenshot">
+          <button type="button" class="gallery-card" data-full="screenshots/01-collections.png" data-thumb="screenshots/thumbs/01-collections.jpg" aria-label="Open Collections screenshot">
             <span class="gallery-card-num">02</span>
             <div class="gallery-card-media">
-              <img src="screenshots/thumbs/delete-request.jpg" alt="DELETE request with query parameters" width="480" height="303" loading="lazy" decoding="async">
+              <img src="screenshots/thumbs/01-collections.jpg" alt="Collections with nested folders" width="480" height="303" loading="lazy" decoding="async">
               <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
             </div>
-            <span class="gallery-card-caption">DELETE with query params, status, and timing</span>
+            <span class="gallery-card-caption">Collections with nested folders, pinning, and {{variable}} URLs</span>
           </button>
 
-          <button type="button" class="gallery-card" data-full="screenshots/delete-response.png" data-thumb="screenshots/thumbs/delete-response.jpg" aria-label="Open DELETE response screenshot">
+          <button type="button" class="gallery-card" data-full="screenshots/03-graphql.png" data-thumb="screenshots/thumbs/03-graphql.jpg" aria-label="Open GraphQL screenshot">
             <span class="gallery-card-num">03</span>
             <div class="gallery-card-media">
-              <img src="screenshots/thumbs/delete-response.jpg" alt="DELETE request empty JSON response" width="480" height="302" loading="lazy" decoding="async">
+              <img src="screenshots/thumbs/03-graphql.jpg" alt="GraphQL query editor" width="480" height="303" loading="lazy" decoding="async">
               <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
             </div>
-            <span class="gallery-card-caption">DELETE — 200 OK with compact JSON body</span>
+            <span class="gallery-card-caption">GraphQL query editor with variables</span>
           </button>
 
-          <button type="button" class="gallery-card" data-full="screenshots/environments.png" data-thumb="screenshots/thumbs/environments.jpg" aria-label="Open Environments screenshot">
+          <button type="button" class="gallery-card" data-full="screenshots/04-websocket.png" data-thumb="screenshots/thumbs/04-websocket.jpg" aria-label="Open WebSocket screenshot">
             <span class="gallery-card-num">04</span>
             <div class="gallery-card-media">
-              <img src="screenshots/thumbs/environments.jpg" alt="Environments dialog" width="480" height="303" loading="lazy" decoding="async">
+              <img src="screenshots/thumbs/04-websocket.jpg" alt="WebSocket client" width="480" height="303" loading="lazy" decoding="async">
               <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
             </div>
-            <span class="gallery-card-caption">Environment variables with {{substitution}}</span>
+            <span class="gallery-card-caption">WebSocket client — connect, send, and inspect traffic</span>
           </button>
 
-          <button type="button" class="gallery-card" data-full="screenshots/history.png" data-thumb="screenshots/thumbs/history.jpg" aria-label="Open History screenshot">
+          <button type="button" class="gallery-card" data-full="screenshots/05-grpc.png" data-thumb="screenshots/thumbs/05-grpc.jpg" aria-label="Open gRPC screenshot">
             <span class="gallery-card-num">05</span>
             <div class="gallery-card-media">
-              <img src="screenshots/thumbs/history.jpg" alt="Request history panel" width="480" height="301" loading="lazy" decoding="async">
+              <img src="screenshots/thumbs/05-grpc.jpg" alt="gRPC unary call" width="480" height="303" loading="lazy" decoding="async">
+              <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
+            </div>
+            <span class="gallery-card-caption">gRPC unary calls from imported .proto files</span>
+          </button>
+
+          <button type="button" class="gallery-card" data-full="screenshots/06-environments.png" data-thumb="screenshots/thumbs/06-environments.jpg" aria-label="Open Environments screenshot">
+            <span class="gallery-card-num">06</span>
+            <div class="gallery-card-media">
+              <img src="screenshots/thumbs/06-environments.jpg" alt="Environments dialog" width="480" height="303" loading="lazy" decoding="async">
+              <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
+            </div>
+            <span class="gallery-card-caption">Environment variables for {{baseUrl}} and secrets</span>
+          </button>
+
+          <button type="button" class="gallery-card" data-full="screenshots/07-scripts.png" data-thumb="screenshots/thumbs/07-scripts.jpg" aria-label="Open Scripts screenshot">
+            <span class="gallery-card-num">07</span>
+            <div class="gallery-card-media">
+              <img src="screenshots/thumbs/07-scripts.jpg" alt="Pre-request and test scripts" width="480" height="303" loading="lazy" decoding="async">
+              <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
+            </div>
+            <span class="gallery-card-caption">Postman-compatible pre-request and test scripts</span>
+          </button>
+
+          <button type="button" class="gallery-card" data-full="screenshots/08-history.png" data-thumb="screenshots/thumbs/08-history.jpg" aria-label="Open History screenshot">
+            <span class="gallery-card-num">08</span>
+            <div class="gallery-card-media">
+              <img src="screenshots/thumbs/08-history.jpg" alt="Request history panel" width="480" height="303" loading="lazy" decoding="async">
               <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
             </div>
             <span class="gallery-card-caption">Request history with status codes and duration</span>
-          </button>
-
-          <button type="button" class="gallery-card" data-full="screenshots/collections.png" data-thumb="screenshots/thumbs/collections.jpg" aria-label="Open Collections screenshot">
-            <span class="gallery-card-num">06</span>
-            <div class="gallery-card-media">
-              <img src="screenshots/thumbs/collections.jpg" alt="Collections and variable URL input" width="480" height="304" loading="lazy" decoding="async">
-              <span class="gallery-card-overlay"><span class="gallery-card-zoom">Expand</span></span>
-            </div>
-            <span class="gallery-card-caption">Collections sidebar and {{variable}} URL bar</span>
           </button>
         </div>
       </div>
@@ -165,7 +195,7 @@
           <figcaption id="lightbox-caption"></figcaption>
         </figure>
         <div class="lightbox-footer">
-          <span id="lightbox-counter" class="lightbox-counter">1 / 6</span>
+          <span id="lightbox-counter" class="lightbox-counter">1 / 8</span>
           <div id="lightbox-thumbs" class="lightbox-thumbs"></div>
         </div>
       </div>

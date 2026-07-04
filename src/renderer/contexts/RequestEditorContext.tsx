@@ -35,14 +35,16 @@ export function RequestEditorProvider({
   draftRef.current = draft
 
   useEffect(() => {
-    if (requestId === lastRequestId.current) return
-    const storeRequest = useAppStore.getState().activeRequest
-    if (!storeRequest) return
-
-    useAppStore.setState({ activeRequest: draftRef.current })
     lastRequestId.current = requestId
-    setDraft(storeRequest)
   }, [requestId])
+
+  const storeRequest = useAppStore((s) =>
+    s.activeRequest?.id === requestId ? s.activeRequest : null
+  )
+
+  useEffect(() => {
+    if (storeRequest) setDraft(storeRequest)
+  }, [storeRequest])
 
   const flush = useCallback(() => {
     useAppStore.setState({ activeRequest: draftRef.current })

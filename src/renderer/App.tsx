@@ -12,6 +12,10 @@ function App() {
     loadInitial()
   }, [loadInitial])
 
+  useEffect(() => {
+    window.__lisekStore = useAppStore
+  }, [])
+
   const theme = useMemo(() => createAppTheme(themeMode), [themeMode])
 
   return (

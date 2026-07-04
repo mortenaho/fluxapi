@@ -1,0 +1,49 @@
+{
+  "gif": {
+    "file": "lisek-tour.gif",
+    "width": 960,
+    "frameDelayMs": 2200
+  },
+  "frames": [
+    {
+      "file": "01-collections",
+      "caption": "Collections with nested folders, pinning, and {{variable}} URLs",
+      "alt": "Collections sidebar with nested folders"
+    },
+    {
+      "file": "02-http-rest",
+      "caption": "HTTP GET with environment substitution and JSON response",
+      "alt": "HTTP request with JSON response panel"
+    },
+    {
+      "file": "03-graphql",
+      "caption": "GraphQL query editor with variables",
+      "alt": "GraphQL protocol tab with query editor"
+    },
+    {
+      "file": "04-websocket",
+      "caption": "WebSocket client — connect, send, and inspect traffic",
+      "alt": "WebSocket protocol tab"
+    },
+    {
+      "file": "05-grpc",
+      "caption": "gRPC unary calls from imported .proto files",
+      "alt": "gRPC service and method picker"
+    },
+    {
+      "file": "06-environments",
+      "caption": "Environment variables for {{baseUrl}} and secrets",
+      "alt": "Environments dialog"
+    },
+    {
+      "file": "07-scripts",
+      "caption": "Postman-compatible pre-request and test scripts",
+      "alt": "Scripts tab with pm.test assertions"
+    },
+    {
+      "file": "08-history",
+      "caption": "Request history with status codes and timing",
+      "alt": "History panel"
+    }
+  ]
+}

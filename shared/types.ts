@@ -340,6 +340,13 @@ export interface LisekAPI {
 declare global {
   interface Window {
     lisek: LisekAPI
+    /** Used by Playwright screenshot tour (tests/e2e/screenshots.spec.mjs). */
+    __lisekStore?: {
+      getState: () => {
+        selectRequest: (req: RequestModel | null) => Promise<void>
+        setActiveSidebar: (tab: 'collections' | 'history' | 'openapi' | 'proto') => void
+      }
+    }
   }
 }
 

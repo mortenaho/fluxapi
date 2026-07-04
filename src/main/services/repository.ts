@@ -1,5 +1,8 @@
+import { existsSync } from 'fs'
+import { join } from 'path'
 import { getAll, getOne, runQuery } from '../db'
 import { v4 as uuidv4 } from 'uuid'
+import { importProtoFile } from './grpc.service'
 import type {
   CollectionModel,
   EnvironmentModel,
@@ -513,6 +516,7 @@ export function seedScreenshotDemo() {
   runQuery('DELETE FROM requests')
   runQuery('DELETE FROM collections')
   runQuery('DELETE FROM environments')
+  runQuery('DELETE FROM proto_files')
 
   saveEnvironment({
     name: 'Local Dev',
@@ -528,31 +532,50 @@ export function seedScreenshotDemo() {
     isActive: true,
     variables: [
       { id: uuidv4(), key: 'baseUrl', value: 'https://jsonplaceholder.typicode.com', enabled: true },
-      { id: uuidv4(), key: 'userId', value: '1', enabled: true }
+      { id: uuidv4(), key: 'userId', value: '1', enabled: true },
+      { id: uuidv4(), key: 'token', value: 'demo-bearer-token', enabled: true }
     ]
   })
   setActiveEnvironment(env.id)
 
-  const collection = createCollection({ name: 'Demo API' })
+  const demoApi = createCollection({
+    name: 'Demo API',
+    variables: [{ id: uuidv4(), key: 'apiVersion', value: 'v1', enabled: true }]
+  })
+  const usersFolder = createCollection({ name: 'Users', parentId: demoApi.id })
 
-  const getUsers = saveRequest({
-    collectionId: collection.id,
-    name: 'Get Users',
+  const listUsers = saveRequest({
+    collectionId: usersFolder.id,
+    name: 'List Users',
     method: 'GET',
     url: '{{baseUrl}}/users',
+    pinned: true,
+    preRequestScript: 'pm.environment.set("requestedAt", Date.now());',
+    testScript: `pm.test("Status is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Returns an array", () => {
+  pm.expect(pm.response.json()).to.be.an("array");
+});`,
     sortOrder: 0
   })
 
-  const getUsersResponse = demoResponse(200, 'OK', [
-    { id: 1, name: 'Alice Chen', email: 'alice@example.com' },
-    { id: 2, name: 'Bob Smith', email: 'bob@example.com' },
-    { id: 3, name: 'Carol Jones', email: 'carol@example.com' }
-  ], 142)
-  saveRequestLastResponse(getUsers.id, getUsersResponse)
-  addHistory(getUsers, getUsersResponse, getUsers.id)
+  const listUsersResponse = demoResponse(
+    200,
+    'OK',
+    [
+      { id: 1, name: 'Alice Chen', email: 'alice@example.com' },
+      { id: 2, name: 'Bob Smith', email: 'bob@example.com' },
+      { id: 3, name: 'Carol Jones', email: 'carol@example.com' }
+    ],
+    142
+  )
+  saveRequestLastResponse(listUsers.id, listUsersResponse)
+  addHistory(listUsers, listUsersResponse, listUsers.id)
 
-  const deleteUser = saveRequest({
-    collectionId: collection.id,
+  saveRequest({
+    collectionId: usersFolder.id,
     name: 'Delete User',
     method: 'DELETE',
     url: '{{baseUrl}}/users/{{userId}}',
@@ -560,19 +583,55 @@ export function seedScreenshotDemo() {
     sortOrder: 1
   })
 
-  const deleteResponse = demoResponse(200, 'OK', {}, 98)
-  saveRequestLastResponse(deleteUser.id, deleteResponse)
-  addHistory(deleteUser, deleteResponse, deleteUser.id)
+  saveRequest({
+    collectionId: demoApi.id,
+    name: 'GraphQL Products',
+    method: 'POST',
+    url: '{{baseUrl}}/graphql',
+    protocol: 'graphql',
+    graphqlQuery: `query Products($limit: Int!) {
+  products(limit: $limit) {
+    id
+    title
+    price
+  }
+}`,
+    graphqlVariables: '{\n  "limit": 10\n}',
+    sortOrder: 1
+  })
 
   saveRequest({
-    collectionId: collection.id,
-    name: 'Create Post',
-    method: 'POST',
-    url: '{{baseUrl}}/posts',
-    bodyType: 'raw',
-    bodyRaw: '{\n  "title": "Hello",\n  "body": "World",\n  "userId": 1\n}',
-    bodyRawContentType: 'application/json',
+    collectionId: demoApi.id,
+    name: 'Live Chat WS',
+    method: 'GET',
+    url: 'wss://echo.websocket.events',
+    protocol: 'websocket',
+    wsUrl: 'wss://echo.websocket.events',
     sortOrder: 2
+  })
+
+  let grpcProtoId: string | null = null
+  const protoPath = join(process.cwd(), 'tests/fixtures/user.proto')
+  if (existsSync(protoPath)) {
+    try {
+      grpcProtoId = importProtoFile(protoPath).protoId
+    } catch {
+      grpcProtoId = null
+    }
+  }
+
+  saveRequest({
+    collectionId: demoApi.id,
+    name: 'gRPC GetUser',
+    method: 'POST',
+    url: '',
+    protocol: 'grpc',
+    grpcTarget: 'localhost:50051',
+    grpcService: 'user.UserService',
+    grpcMethod: 'GetUser',
+    grpcProtoId,
+    grpcMessage: '{\n  "id": 1\n}',
+    sortOrder: 3
   })
 }
 
