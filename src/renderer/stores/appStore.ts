@@ -142,22 +142,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveRequest: (req) => set({ activeRequest: req, response: null, testResults: [] }),
 
   selectRequest: async (req) => {
+    set({ response: null, testResults: [] })
+
     if (!req) {
-      set({ activeRequest: null, response: null, testResults: [] })
+      set({ activeRequest: null })
       return
     }
+
+    set({ activeRequest: req })
+
     if (req.id) {
       const full = await window.fluxAPI.requests.get(req.id)
-      if (full) {
+      if (full && get().activeRequest?.id === full.id) {
         set({
           activeRequest: full,
           response: full.lastResponse ?? null,
           testResults: full.lastTestResults ?? []
         })
-        return
       }
     }
-    set({ activeRequest: req, response: null, testResults: [] })
   },
 
   openHistoryItem: (item) => {
@@ -326,6 +329,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   createRequest: async (collectionId = null) => {
+    set({
+      activeRequest: { ...emptyRequest(), collectionId, name: 'New Request' },
+      response: null,
+      testResults: []
+    })
+
     const saved = await window.fluxAPI.requests.save({
       name: 'New Request',
       collectionId,
@@ -340,7 +349,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   deleteRequest: async (id) => {
     await window.fluxAPI.requests.delete(id)
     if (get().activeRequest?.id === id) {
-      set({ activeRequest: emptyRequest() })
+      set({ activeRequest: emptyRequest(), response: null, testResults: [] })
     }
     await get().loadRequests()
   },

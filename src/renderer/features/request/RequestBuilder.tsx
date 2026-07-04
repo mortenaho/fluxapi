@@ -9,20 +9,28 @@ import {
   FormControl,
   InputLabel,
   Typography,
-  CircularProgress,
   Tooltip,
   IconButton,
   Snackbar,
-  Alert
+  Alert,
+  Chip,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import SendIcon from '@mui/icons-material/Send'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
-import { memo, useCallback, useEffect, useState } from 'react'
+import TuneIcon from '@mui/icons-material/Tune'
+import HttpIcon from '@mui/icons-material/Http'
+import DataObjectIcon from '@mui/icons-material/DataObject'
+import LockIcon from '@mui/icons-material/Lock'
+import CodeIcon from '@mui/icons-material/Code'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import CodeEditor from '../../components/CodeEditor'
 import { useAppStore } from '../../stores/appStore'
 import { RequestEditorProvider, useRequestEditor } from '../../contexts/RequestEditorContext'
 import KeyValueEditor from '../../components/KeyValueEditor'
+import RequestTabPanel from '../../components/RequestTabPanel'
 import AuthTab from './AuthTab'
 import WebSocketTab from './WebSocketTab'
 import GraphQLTab from './GraphQLTab'
@@ -30,7 +38,7 @@ import GrpcTab from './GrpcTab'
 import ScriptsTab from './ScriptsTab'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import VariableInput from '../../components/VariableInput'
-import type { HttpMethod, KeyValue, Protocol } from '@shared/types'
+import type { BodyType, HttpMethod, KeyValue, Protocol } from '@shared/types'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET: '#61affe',
@@ -45,6 +53,36 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const PROTOCOLS: Protocol[] = ['http', 'graphql', 'websocket', 'grpc']
 const EMPTY_VARS: KeyValue[] = []
+
+const CONTENT_TYPE_PRESETS = [
+  { label: 'JSON', value: 'application/json' },
+  { label: 'Text', value: 'text/plain' },
+  { label: 'HTML', value: 'text/html' },
+  { label: 'XML', value: 'application/xml' }
+] as const
+
+type RequestSection = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'protocol'
+
+function countActive(items: KeyValue[]) {
+  return items.filter((i) => i.enabled && i.key.trim()).length
+}
+
+function TabLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+      {icon}
+      {label}
+      {count !== undefined && count > 0 && (
+        <Chip
+          label={count}
+          size="small"
+          color="primary"
+          sx={{ height: 18, minWidth: 18, fontSize: 10, '& .MuiChip-label': { px: 0.75 } }}
+        />
+      )}
+    </Box>
+  )
+}
 
 const SendButton = memo(function SendButton({
   onSend,
@@ -80,15 +118,29 @@ function RequestBuilderForm({
   const { request, patch, flush } = useRequestEditor()
   const sendRequest = useAppStore((s) => s.sendRequest)
   const snippetOpen = useAppStore((s) => s.snippetOpen)
-  const [tab, setTab] = useState(0)
+  const [section, setSection] = useState<RequestSection>('params')
   const [jsonFormatError, setJsonFormatError] = useState<string | null>(null)
+
+  const paramCount = useMemo(() => countActive(request.params), [request.params])
+  const headerCount = useMemo(() => countActive(request.headers), [request.headers])
+  const hasAuth = request.authType !== 'none'
+  const hasScripts = !!(request.preRequestScript.trim() || request.testScript.trim())
+
+  const protocolTabLabel =
+    request.protocol === 'graphql'
+      ? 'GraphQL'
+      : request.protocol === 'websocket'
+        ? 'WebSocket'
+        : request.protocol === 'grpc'
+          ? 'gRPC'
+          : null
 
   useEffect(() => {
     if (snippetOpen) flush()
   }, [snippetOpen, flush])
 
   useEffect(() => {
-    if (request.bodyType !== 'none') setTab(2)
+    if (request.bodyType !== 'none') setSection('body')
   }, [request.id, request.bodyType])
 
   const handleSend = useCallback(async () => {
@@ -205,84 +257,220 @@ function RequestBuilderForm({
         )}
       </Box>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
-        <Tab label="Params" />
-        <Tab label="Headers" />
-        <Tab label="Body" />
-        <Tab label="Auth" />
-        <Tab label="Scripts" />
-        {request.protocol === 'graphql' && <Tab label="GraphQL" />}
-        {request.protocol === 'websocket' && <Tab label="WebSocket" />}
-        {request.protocol === 'grpc' && <Tab label="gRPC" />}
+      <Tabs
+        value={section}
+        onChange={(_, v: RequestSection) => setSection(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{
+          minHeight: 42,
+          borderBottom: 1,
+          borderColor: 'divider',
+          '& .MuiTab-root': { minHeight: 42, py: 0, textTransform: 'none', fontWeight: 600, fontSize: 13 }
+        }}
+      >
+        <Tab
+          value="params"
+          label={
+            <TabLabel icon={<TuneIcon sx={{ fontSize: 16 }} />} label="Params" count={paramCount} />
+          }
+        />
+        <Tab
+          value="headers"
+          label={
+            <TabLabel icon={<HttpIcon sx={{ fontSize: 16 }} />} label="Headers" count={headerCount} />
+          }
+        />
+        <Tab
+          value="body"
+          label={<TabLabel icon={<DataObjectIcon sx={{ fontSize: 16 }} />} label="Body" />}
+        />
+        <Tab
+          value="auth"
+          label={
+            <TabLabel
+              icon={<LockIcon sx={{ fontSize: 16 }} />}
+              label="Auth"
+              count={hasAuth ? 1 : 0}
+            />
+          }
+        />
+        <Tab
+          value="scripts"
+          label={
+            <TabLabel
+              icon={<CodeIcon sx={{ fontSize: 16 }} />}
+              label="Scripts"
+              count={hasScripts ? 1 : 0}
+            />
+          }
+        />
+        {protocolTabLabel && <Tab value="protocol" label={protocolTabLabel} />}
       </Tabs>
 
-      <Box sx={{ pt: 2 }}>
-        {tab === 0 && (
-          <KeyValueEditor items={request.params} onChange={patchParams} keyLabel="Param" />
+      <RequestTabPanel>
+        {section === 'params' && (
+          <KeyValueEditor
+            items={request.params}
+            onChange={patchParams}
+            keyLabel="Param"
+            description="Query string parameters appended to the URL."
+            emptyTitle="No query parameters"
+            emptyHint="Add params like page, limit, or filter"
+            keyPlaceholder="param_name"
+            valuePlaceholder="value or {{var}}"
+          />
         )}
-        {tab === 1 && <KeyValueEditor items={request.headers} onChange={patchHeaders} />}
-        {tab === 2 && (
+
+        {section === 'headers' && (
+          <KeyValueEditor
+            items={request.headers}
+            onChange={patchHeaders}
+            description="HTTP headers sent with the request."
+            emptyTitle="No custom headers"
+            emptyHint="Add Content-Type, Accept, or custom headers"
+            keyPlaceholder="Header-Name"
+            valuePlaceholder="value or {{var}}"
+          />
+        )}
+
+        {section === 'body' && (
           <Box>
-            <FormControl size="small" sx={{ mb: 2, minWidth: 200 }}>
-              <InputLabel>Body Type</InputLabel>
-              <Select
-                value={request.bodyType}
-                label="Body Type"
-                onChange={(e) => patch({ bodyType: e.target.value as typeof request.bodyType })}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              Request payload format
+            </Typography>
+
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={request.bodyType}
+              onChange={(_, value: BodyType | null) => value && patch({ bodyType: value })}
+              sx={{
+                mb: 2,
+                flexWrap: 'wrap',
+                gap: 0.5,
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: '6px !important',
+                  mx: '0 !important',
+                  px: 1.5,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: 12
+                }
+              }}
+            >
+              <ToggleButton value="none">None</ToggleButton>
+              <ToggleButton value="raw">Raw</ToggleButton>
+              <ToggleButton value="form-data">Form Data</ToggleButton>
+              <ToggleButton value="x-www-form-urlencoded">URL Encoded</ToggleButton>
+            </ToggleButtonGroup>
+
+            {request.bodyType === 'none' && (
+              <Box
+                sx={{
+                  py: 3,
+                  px: 2,
+                  textAlign: 'center',
+                  border: 1,
+                  borderStyle: 'dashed',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  bgcolor: 'action.hover'
+                }}
               >
-                <MenuItem value="none">None</MenuItem>
-                <MenuItem value="raw">Raw</MenuItem>
-                <MenuItem value="form-data">Form Data</MenuItem>
-                <MenuItem value="x-www-form-urlencoded">URL Encoded</MenuItem>
-              </Select>
-            </FormControl>
+                <Typography variant="body2" color="text.secondary">
+                  This request has no body (typical for GET, HEAD, DELETE)
+                </Typography>
+              </Box>
+            )}
+
             {request.bodyType === 'raw' && (
               <>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mb: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1.5, flexWrap: 'wrap' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+                    Content-Type:
+                  </Typography>
+                  {CONTENT_TYPE_PRESETS.map((preset) => (
+                    <Chip
+                      key={preset.value}
+                      label={preset.label}
+                      size="small"
+                      variant={request.bodyRawContentType === preset.value ? 'filled' : 'outlined'}
+                      color={request.bodyRawContentType === preset.value ? 'primary' : 'default'}
+                      onClick={() => patch({ bodyRawContentType: preset.value })}
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  ))}
                   <TextField
                     size="small"
-                    label="Content-Type"
+                    placeholder="Custom content type"
                     value={request.bodyRawContentType}
                     onChange={(e) => patch({ bodyRawContentType: e.target.value })}
-                    sx={{ width: 300 }}
+                    sx={{ flex: 1, minWidth: 180 }}
                   />
-                  <Tooltip title="Format JSON (2-space indent)">
-                    <span>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<AutoFixHighIcon />}
-                        onClick={formatBodyJson}
-                        disabled={!request.bodyRaw.trim()}
-                      >
-                        Beautify JSON
-                      </Button>
-                    </span>
-                  </Tooltip>
+                  {isJsonBody && (
+                    <Tooltip title="Format JSON (2-space indent)">
+                      <span>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<AutoFixHighIcon />}
+                          onClick={formatBodyJson}
+                          disabled={!request.bodyRaw.trim()}
+                        >
+                          Beautify
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  )}
                 </Box>
-                <CodeEditor
-                  editorKey={`${request.id}-body`}
-                  height="200px"
-                  language={isJsonBody ? 'json' : 'plaintext'}
-                  value={request.bodyRaw}
-                  onChange={patchBodyRaw}
-                />
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                  <CodeEditor
+                    editorKey={`${request.id}-body`}
+                    height="220px"
+                    language={isJsonBody ? 'json' : 'plaintext'}
+                    value={request.bodyRaw}
+                    onChange={patchBodyRaw}
+                  />
+                </Box>
               </>
             )}
+
             {request.bodyType === 'form-data' && (
-              <KeyValueEditor items={request.formData} onChange={patchFormData} allowFiles />
+              <KeyValueEditor
+                items={request.formData}
+                onChange={patchFormData}
+                allowFiles
+                description="Multipart form fields. Attach files using the clip icon."
+                emptyTitle="No form fields"
+                emptyHint="Add text fields or file uploads"
+                keyPlaceholder="field_name"
+                valuePlaceholder="value"
+              />
             )}
+
             {request.bodyType === 'x-www-form-urlencoded' && (
-              <KeyValueEditor items={request.urlEncoded} onChange={patchUrlEncoded} />
+              <KeyValueEditor
+                items={request.urlEncoded}
+                onChange={patchUrlEncoded}
+                description="URL-encoded key-value pairs in the request body."
+                emptyTitle="No URL-encoded fields"
+                emptyHint="Add application/x-www-form-urlencoded fields"
+                keyPlaceholder="field_name"
+                valuePlaceholder="value"
+              />
             )}
           </Box>
         )}
-        {tab === 3 && <AuthTab />}
-        {tab === 4 && <ScriptsTab />}
-        {tab === 5 && request.protocol === 'graphql' && <GraphQLTab />}
-        {tab === 5 && request.protocol === 'websocket' && <WebSocketTab />}
-        {tab === 5 && request.protocol === 'grpc' && <GrpcTab />}
-      </Box>
+
+        {section === 'auth' && <AuthTab />}
+        {section === 'scripts' && <ScriptsTab />}
+        {section === 'protocol' && request.protocol === 'graphql' && <GraphQLTab />}
+        {section === 'protocol' && request.protocol === 'websocket' && <WebSocketTab />}
+        {section === 'protocol' && request.protocol === 'grpc' && <GrpcTab />}
+      </RequestTabPanel>
 
       <Snackbar
         open={!!jsonFormatError}
