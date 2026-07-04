@@ -1,6 +1,6 @@
 {
   "name": "fluxapi",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Offline API client for HTTP, GraphQL, WebSocket, and gRPC",
   "main": "./out/main/index.js",
   "author": "Seyed Morteza Hosseini <mortenaho@gmail.com> (https://mortenaho.ir)",
