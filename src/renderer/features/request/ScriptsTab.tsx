@@ -7,11 +7,10 @@ import {
   Typography
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import { useCallback } from 'react'
 import CodeEditor from '../../components/CodeEditor'
 import { useRequestEditor } from '../../contexts/RequestEditorContext'
+import { COMPACT } from '../../theme/compact'
 
 const PM_API = [
   'alert(message) · confirm(message)',
@@ -34,107 +33,89 @@ export default function ScriptsTab() {
 
   return (
     <Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        JavaScript runs in a sandbox before and after the request. Use the <code>pm.*</code> API to
-        modify variables or assert on responses.
-      </Typography>
-
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-          gap: 2
+          gap: 0.75
         }}
       >
         <Paper variant="outlined" sx={{ overflow: 'hidden', height: '100%' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 2,
-                py: 1.25,
-                bgcolor: 'action.hover',
-                borderBottom: 1,
-                borderColor: 'divider'
-              }}
-            >
-              <PlayCircleOutlineIcon fontSize="small" color="primary" />
-              <Box>
-                <Typography variant="subtitle2">Pre-request Script</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Runs before the request is sent
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ p: 1 }}>
-              <CodeEditor
-                editorKey={`${request.id}-pre`}
-                height="180px"
-                language="javascript"
-                value={request.preRequestScript}
-                onChange={patchPreRequest}
-              />
-            </Box>
-          </Paper>
+          <Box
+            sx={{
+              px: 0.75,
+              py: 0.375,
+              bgcolor: 'action.hover',
+              borderBottom: 1,
+              borderColor: 'divider'
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3 }}>Pre-request</Typography>
+            <Typography sx={COMPACT.caption}>Runs before send</Typography>
+          </Box>
+          <Box sx={{ p: 0.5 }}>
+            <CodeEditor
+              editorKey={`${request.id}-pre`}
+              height="130px"
+              language="javascript"
+              value={request.preRequestScript}
+              onChange={patchPreRequest}
+            />
+          </Box>
+        </Paper>
 
         <Paper variant="outlined" sx={{ overflow: 'hidden', height: '100%' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 2,
-                py: 1.25,
-                bgcolor: 'action.hover',
-                borderBottom: 1,
-                borderColor: 'divider'
-              }}
-            >
-              <CheckCircleOutlineIcon fontSize="small" color="success" />
-              <Box>
-                <Typography variant="subtitle2">Tests</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Runs after the response — results appear in the response panel
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ p: 1 }}>
-              <CodeEditor
-                editorKey={`${request.id}-test`}
-                height="180px"
-                language="javascript"
-                value={request.testScript}
-                onChange={patchTestScript}
-              />
-            </Box>
-          </Paper>
+          <Box
+            sx={{
+              px: 0.75,
+              py: 0.375,
+              bgcolor: 'action.hover',
+              borderBottom: 1,
+              borderColor: 'divider'
+            }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3 }}>Tests</Typography>
+            <Typography sx={COMPACT.caption}>Runs after response</Typography>
+          </Box>
+          <Box sx={{ p: 0.5 }}>
+            <CodeEditor
+              editorKey={`${request.id}-test`}
+              height="130px"
+              language="javascript"
+              value={request.testScript}
+              onChange={patchTestScript}
+            />
+          </Box>
+        </Paper>
       </Box>
 
       <Accordion
         disableGutters
         elevation={0}
         sx={{
-          mt: 2,
+          mt: 0.75,
           border: 1,
           borderColor: 'divider',
-          borderRadius: '8px !important',
-          '&:before': { display: 'none' }
+          borderRadius: '6px !important',
+          '&:before': { display: 'none' },
+          '& .MuiAccordionSummary-root': { minHeight: 32, py: 0 },
+          '& .MuiAccordionSummary-content': { my: 0.5 }
         }}
       >
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle2">pm.* API reference</Typography>
+        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}>
+          <Typography sx={{ fontSize: 11, fontWeight: 600 }}>pm.* API reference</Typography>
         </AccordionSummary>
-        <AccordionDetails sx={{ pt: 0 }}>
+        <AccordionDetails sx={{ pt: 0, pb: 0.75 }}>
           <Box
             component="ul"
             sx={{
               m: 0,
-              pl: 2.5,
+              pl: 2,
               fontFamily: 'Consolas, monospace',
-              fontSize: 12,
+              fontSize: 10,
               color: 'text.secondary',
-              '& li': { mb: 0.5 }
+              lineHeight: 1.4,
+              '& li': { mb: 0.25 }
             }}
           >
             {PM_API.map((line) => (

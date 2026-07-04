@@ -12,10 +12,10 @@ function RequestTabPanel({ children, sx, ...rest }: Props) {
         border: 1,
         borderColor: 'divider',
         borderTop: 0,
-        borderRadius: '0 0 8px 8px',
+        borderRadius: '0 0 6px 6px',
         bgcolor: 'background.paper',
-        p: 2,
-        minHeight: 220,
+        p: 0.75,
+        minHeight: 140,
         ...sx
       }}
       {...rest}

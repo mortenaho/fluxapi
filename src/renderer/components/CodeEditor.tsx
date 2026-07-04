@@ -28,13 +28,13 @@ function FallbackEditor({
       sx={{
         '& .MuiInputBase-root': {
           fontFamily: 'Consolas, "Courier New", monospace',
-          fontSize: 13,
+          fontSize: 11,
           alignItems: 'flex-start',
-          py: 1
+          py: 0.5
         },
         '& textarea': {
           minHeight: height,
-          lineHeight: 1.5
+          lineHeight: 1.35
         }
       }}
     />
@@ -59,7 +59,14 @@ function CodeEditor({
       value={value}
       onChange={handleChange}
       loading={<FallbackEditor value={value} onChange={onChange} height={height} minRows={minRows} />}
-      options={{ minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false }}
+      options={{
+        minimap: { enabled: false },
+        fontSize: 11,
+        lineHeight: 16,
+        scrollBeyondLastLine: false,
+        padding: { top: 4, bottom: 4 },
+        scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 }
+      }}
     />
   )
 }

@@ -6,8 +6,6 @@ import {
   Select,
   MenuItem,
   Button,
-  FormControl,
-  InputLabel,
   Typography,
   Tooltip,
   IconButton,
@@ -20,11 +18,6 @@ import {
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import SendIcon from '@mui/icons-material/Send'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
-import TuneIcon from '@mui/icons-material/Tune'
-import HttpIcon from '@mui/icons-material/Http'
-import DataObjectIcon from '@mui/icons-material/DataObject'
-import LockIcon from '@mui/icons-material/Lock'
-import CodeIcon from '@mui/icons-material/Code'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import CodeEditor from '../../components/CodeEditor'
 import ContentTypeSelect from '../../components/ContentTypeSelect'
@@ -41,6 +34,7 @@ import GrpcTab from './GrpcTab'
 import ScriptsTab from './ScriptsTab'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import VariableInput from '../../components/VariableInput'
+import { COMPACT } from '../../theme/compact'
 import type { BodyType, HttpMethod, KeyValue, Protocol } from '@shared/types'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
@@ -63,17 +57,16 @@ function countActive(items: KeyValue[]) {
   return items.filter((i) => i.enabled && i.key.trim()).length
 }
 
-function TabLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
+function TabLabel({ label, count }: { label: string; count?: number }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-      {icon}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.375 }}>
       {label}
       {count !== undefined && count > 0 && (
         <Chip
           label={count}
           size="small"
           color="primary"
-          sx={{ height: 18, minWidth: 18, fontSize: 10, '& .MuiChip-label': { px: 0.75 } }}
+          sx={{ height: 16, minWidth: 16, fontSize: 9, '& .MuiChip-label': { px: 0.5 } }}
         />
       )}
     </Box>
@@ -91,14 +84,21 @@ const SendButton = memo(function SendButton({
 
   if (loading) {
     return (
-      <Button variant="outlined" color="warning" onClick={onCancel}>
+      <Button variant="outlined" color="warning" size="small" onClick={onCancel} sx={COMPACT.btnSmall}>
         Cancel
       </Button>
     )
   }
 
   return (
-    <Button variant="contained" color="primary" startIcon={<SendIcon />} onClick={onSend}>
+    <Button
+      variant="contained"
+      color="primary"
+      size="small"
+      startIcon={<SendIcon sx={COMPACT.icon} />}
+      onClick={onSend}
+      sx={COMPACT.btnSmall}
+    >
       Send
     </Button>
   )
@@ -206,22 +206,29 @@ function RequestBuilderForm({
   const bodyLanguage = languageForContentType(request.bodyRawContentType)
 
   return (
-    <Box sx={{ p: 2 }} onKeyDown={handleKeyDown}>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <FormControl size="small" sx={{ minWidth: 100 }}>
-          <InputLabel>Protocol</InputLabel>
-          <Select
-            value={request.protocol}
-            label="Protocol"
-            onChange={(e) => patch({ protocol: e.target.value as Protocol })}
-          >
-            {PROTOCOLS.map((p) => (
-              <MenuItem key={p} value={p}>
-                {p.toUpperCase()}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+    <Box sx={{ p: 0.5 }} onKeyDown={handleKeyDown}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 0.5,
+          mb: 0.5,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          ...COMPACT.bar
+        }}
+      >
+        <Select
+          size="small"
+          value={request.protocol}
+          onChange={(e) => patch({ protocol: e.target.value as Protocol })}
+          sx={{ minWidth: 72, ...COMPACT.select }}
+        >
+          {PROTOCOLS.map((p) => (
+            <MenuItem key={p} value={p} sx={{ fontSize: 11 }}>
+              {p.toUpperCase()}
+            </MenuItem>
+          ))}
+        </Select>
         {request.protocol === 'http' || request.protocol === 'graphql' ? (
           <>
             <Select
@@ -229,7 +236,8 @@ function RequestBuilderForm({
               value={request.method}
               onChange={(e) => patch({ method: e.target.value as HttpMethod })}
               sx={{
-                minWidth: 100,
+                minWidth: 72,
+                ...COMPACT.select,
                 bgcolor: METHOD_COLORS[request.method],
                 color: '#fff',
                 fontWeight: 700,
@@ -238,7 +246,7 @@ function RequestBuilderForm({
               }}
             >
               {METHODS.map((m) => (
-                <MenuItem key={m} value={m}>
+                <MenuItem key={m} value={m} sx={{ fontSize: 11 }}>
                   {m}
                 </MenuItem>
               ))}
@@ -246,7 +254,7 @@ function RequestBuilderForm({
             <VariableInput
               value={request.url}
               onChange={patchUrl}
-              placeholder="https://api.example.com/endpoint or {{baseUrl}}/path"
+              placeholder="https://api.example.com or {{baseUrl}}/path"
               collectionVariables={collectionVariables}
             />
           </>
@@ -257,6 +265,7 @@ function RequestBuilderForm({
             placeholder="ws://localhost:8080"
             value={request.wsUrl}
             onChange={(e) => patch({ wsUrl: e.target.value })}
+            sx={COMPACT.input}
           />
         ) : (
           <TextField
@@ -265,13 +274,14 @@ function RequestBuilderForm({
             placeholder="localhost:50051"
             value={request.grpcTarget}
             onChange={(e) => patch({ grpcTarget: e.target.value })}
+            sx={COMPACT.input}
           />
         )}
         <SendButton onSend={handleSend} onCancel={() => void handleCancel()} />
         {request.id && (
           <Tooltip title="Delete request">
-            <IconButton color="error" onClick={onDelete}>
-              <DeleteOutlineIcon />
+            <IconButton color="error" onClick={onDelete} sx={COMPACT.iconBtn}>
+              <DeleteOutlineIcon sx={COMPACT.icon} />
             </IconButton>
           </Tooltip>
         )}
@@ -283,48 +293,18 @@ function RequestBuilderForm({
         variant="scrollable"
         scrollButtons="auto"
         sx={{
-          minHeight: 42,
+          minHeight: 28,
           borderBottom: 1,
           borderColor: 'divider',
-          '& .MuiTab-root': { minHeight: 42, py: 0, textTransform: 'none', fontWeight: 600, fontSize: 13 }
+          '& .MuiTabs-indicator': { height: 2 },
+          '& .MuiTab-root': COMPACT.tabRoot
         }}
       >
-        <Tab
-          value="params"
-          label={
-            <TabLabel icon={<TuneIcon sx={{ fontSize: 16 }} />} label="Params" count={paramCount} />
-          }
-        />
-        <Tab
-          value="headers"
-          label={
-            <TabLabel icon={<HttpIcon sx={{ fontSize: 16 }} />} label="Headers" count={headerCount} />
-          }
-        />
-        <Tab
-          value="body"
-          label={<TabLabel icon={<DataObjectIcon sx={{ fontSize: 16 }} />} label="Body" />}
-        />
-        <Tab
-          value="auth"
-          label={
-            <TabLabel
-              icon={<LockIcon sx={{ fontSize: 16 }} />}
-              label="Auth"
-              count={hasAuth ? 1 : 0}
-            />
-          }
-        />
-        <Tab
-          value="scripts"
-          label={
-            <TabLabel
-              icon={<CodeIcon sx={{ fontSize: 16 }} />}
-              label="Scripts"
-              count={hasScripts ? 1 : 0}
-            />
-          }
-        />
+        <Tab value="params" label={<TabLabel label="Params" count={paramCount} />} />
+        <Tab value="headers" label={<TabLabel label="Headers" count={headerCount} />} />
+        <Tab value="body" label="Body" />
+        <Tab value="auth" label={<TabLabel label="Auth" count={hasAuth ? 1 : 0} />} />
+        <Tab value="scripts" label={<TabLabel label="Scripts" count={hasScripts ? 1 : 0} />} />
         {protocolTabLabel && <Tab value="protocol" label={protocolTabLabel} />}
       </Tabs>
 
@@ -345,14 +325,7 @@ function RequestBuilderForm({
         {section === 'headers' && (
           <Box>
             {showContentTypeInHeaders && (
-              <Box
-                sx={{
-                  mb: 2,
-                  pb: 2,
-                  borderBottom: 1,
-                  borderColor: 'divider'
-                }}
-              >
+              <Box sx={{ mb: 1, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
                 {request.bodyType === 'raw' ? (
                   <ContentTypeSelect
                     value={request.bodyRawContentType}
@@ -360,20 +333,15 @@ function RequestBuilderForm({
                   />
                 ) : (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                    <Typography sx={{ ...COMPACT.caption, display: 'block', mb: 0.25 }}>
                       Content-Type
                     </Typography>
                     <Chip
                       label={contentTypeValue}
                       size="small"
                       variant="outlined"
-                      sx={{ fontFamily: 'Consolas, monospace', fontSize: 12 }}
+                      sx={{ fontFamily: 'Consolas, monospace', fontSize: 10, height: 20 }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
-                      {request.bodyType === 'form-data'
-                        ? 'Boundary is added automatically when sending'
-                        : 'Set by URL Encoded body type'}
-                    </Typography>
                   </Box>
                 )}
               </Box>
@@ -389,75 +357,72 @@ function RequestBuilderForm({
 
         {section === 'body' && (
           <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Request payload format
-            </Typography>
-
             <ToggleButtonGroup
               exclusive
               size="small"
               value={request.bodyType}
               onChange={(_, value: BodyType | null) => value && patch({ bodyType: value })}
               sx={{
-                mb: 2,
+                mb: 1,
                 flexWrap: 'wrap',
-                gap: 0.5,
+                gap: 0.25,
                 '& .MuiToggleButtonGroup-grouped': {
                   border: 1,
                   borderColor: 'divider',
-                  borderRadius: '6px !important',
+                  borderRadius: '4px !important',
                   mx: '0 !important',
-                  px: 1.5,
+                  px: 0.75,
+                  py: 0.125,
                   textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: 12
+                  fontWeight: 500,
+                  fontSize: 10,
+                  lineHeight: 1.3
                 }
               }}
             >
               <ToggleButton value="none">None</ToggleButton>
               <ToggleButton value="raw">Raw</ToggleButton>
-              <ToggleButton value="form-data">Form Data</ToggleButton>
-              <ToggleButton value="x-www-form-urlencoded">URL Encoded</ToggleButton>
+              <ToggleButton value="form-data">Form</ToggleButton>
+              <ToggleButton value="x-www-form-urlencoded">URL Enc</ToggleButton>
             </ToggleButtonGroup>
 
             {request.bodyType === 'none' && (
               <Box
                 sx={{
-                  py: 3,
-                  px: 2,
+                  py: 1.5,
+                  px: 1,
                   textAlign: 'center',
                   border: 1,
                   borderStyle: 'dashed',
                   borderColor: 'divider',
-                  borderRadius: 1,
+                  borderRadius: 0.75,
                   bgcolor: 'action.hover'
                 }}
               >
-                <Typography variant="body2" color="text.secondary">
-                  This request has no body (typical for GET, HEAD, DELETE)
-                </Typography>
+                <Typography sx={COMPACT.caption}>No body (typical for GET, HEAD, DELETE)</Typography>
               </Box>
             )}
 
             {request.bodyType === 'raw' && (
               <>
                 {isJsonBody && (
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.75 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.25 }}>
                     <Tooltip title="Format JSON">
                       <IconButton
                         size="small"
                         onClick={formatBodyJson}
                         disabled={!request.bodyRaw.trim()}
+                        sx={COMPACT.iconBtn}
                       >
-                        <AutoFixHighIcon fontSize="small" />
+                        <AutoFixHighIcon sx={COMPACT.icon} />
                       </IconButton>
                     </Tooltip>
                   </Box>
                 )}
-                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 0.75, overflow: 'hidden' }}>
                   <CodeEditor
                     editorKey={`${request.id}-body-${bodyLanguage}`}
-                    height="220px"
+                    height="160px"
                     language={bodyLanguage}
                     value={request.bodyRaw}
                     onChange={patchBodyRaw}
@@ -535,8 +500,8 @@ function RequestBuilderShell() {
 
   if (!hasActiveRequest) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography color="text.secondary">Select or create a request</Typography>
+      <Box sx={{ p: 1.5, textAlign: 'center' }}>
+        <Typography sx={COMPACT.caption}>Select or create a request</Typography>
       </Box>
     )
   }

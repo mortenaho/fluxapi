@@ -14,6 +14,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile'
 import { memo, useCallback, useMemo } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { KeyValue } from '@shared/types'
+import { COMPACT } from '../theme/compact'
 
 interface Props {
   items: KeyValue[]
@@ -53,11 +54,11 @@ const KeyValueRow = memo(function KeyValueRow({
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: allowFiles ? '36px 1fr 1fr auto' : '36px 1fr 1fr 40px',
-        gap: 1,
+        gridTemplateColumns: allowFiles ? '28px 1fr 1fr auto' : '28px 1fr 1fr 32px',
+        gap: 0.5,
         alignItems: 'center',
-        px: 1.5,
-        py: 0.75,
+        px: 0.75,
+        py: 0.375,
         borderBottom: 1,
         borderColor: 'divider',
         opacity: item.enabled ? 1 : 0.45,
@@ -71,7 +72,7 @@ const KeyValueRow = memo(function KeyValueRow({
           checked={item.enabled}
           onChange={(e) => onFieldChange(index, 'enabled', e.target.checked)}
           size="small"
-          sx={{ p: 0.5 }}
+          sx={{ p: 0.25 }}
         />
       </Tooltip>
 
@@ -81,10 +82,9 @@ const KeyValueRow = memo(function KeyValueRow({
         placeholder={keyPlaceholder}
         value={item.key}
         onChange={(e) => onFieldChange(index, 'key', e.target.value)}
+        sx={COMPACT.input}
         slotProps={{
-          input: {
-            sx: { fontFamily: 'Consolas, monospace', fontSize: 13 }
-          }
+          input: { sx: COMPACT.monoInput }
         }}
       />
 
@@ -92,10 +92,10 @@ const KeyValueRow = memo(function KeyValueRow({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
           <Chip
             size="small"
-            icon={<AttachFileIcon sx={{ fontSize: '14px !important' }} />}
+            icon={<AttachFileIcon sx={{ fontSize: '12px !important' }} />}
             label={item.filePath.split(/[/\\]/).pop()}
             onClick={() => onPickFile(index)}
-            sx={{ maxWidth: '100%', fontFamily: 'monospace', fontSize: 12 }}
+            sx={{ maxWidth: '100%', fontFamily: 'monospace', fontSize: 10, height: 22 }}
           />
         </Box>
       ) : (
@@ -105,10 +105,9 @@ const KeyValueRow = memo(function KeyValueRow({
           placeholder={valuePlaceholder}
           value={item.value}
           onChange={(e) => onFieldChange(index, 'value', e.target.value)}
+          sx={COMPACT.input}
           slotProps={{
-            input: {
-              sx: { fontFamily: 'Consolas, monospace', fontSize: 13 }
-            }
+            input: { sx: COMPACT.monoInput }
           }}
         />
       )}
@@ -116,14 +115,14 @@ const KeyValueRow = memo(function KeyValueRow({
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         {allowFiles && (
           <Tooltip title="Attach file">
-            <IconButton size="small" onClick={() => onPickFile(index)}>
-              <AttachFileIcon sx={{ fontSize: 18 }} />
+            <IconButton size="small" onClick={() => onPickFile(index)} sx={COMPACT.iconBtn}>
+              <AttachFileIcon sx={COMPACT.icon} />
             </IconButton>
           </Tooltip>
         )}
         <Tooltip title="Remove">
-          <IconButton size="small" color="error" onClick={() => onRemove(index)}>
-            <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+          <IconButton size="small" color="error" onClick={() => onRemove(index)} sx={COMPACT.iconBtn}>
+            <DeleteOutlineIcon sx={COMPACT.icon} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -187,41 +186,45 @@ function KeyValueEditor({
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 2,
-          mb: 1.5,
+          gap: 1,
+          mb: 0.75,
           flexWrap: 'wrap'
         }}
       >
-        <Box sx={{ flex: 1, minWidth: 200 }}>
+        <Box sx={{ flex: 1, minWidth: 160 }}>
           {description && (
-            <Typography variant="body2" color="text.secondary">
-              {description}
-            </Typography>
+            <Typography sx={COMPACT.caption}>{description}</Typography>
           )}
           {items.length > 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <Typography sx={{ ...COMPACT.caption, display: 'block', mt: description ? 0.25 : 0 }}>
               {enabledCount} active · {items.length} total
             </Typography>
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 0.25, flexWrap: 'wrap' }}>
           {items.length > 0 && (
             <>
-              <Button size="small" variant="text" onClick={() => setAllEnabled(true)}>
-                Enable all
+              <Button size="small" variant="text" onClick={() => setAllEnabled(true)} sx={{ fontSize: 10, py: 0.25, minWidth: 0 }}>
+                All on
               </Button>
-              <Button size="small" variant="text" onClick={() => setAllEnabled(false)}>
-                Disable all
+              <Button size="small" variant="text" onClick={() => setAllEnabled(false)} sx={{ fontSize: 10, py: 0.25, minWidth: 0 }}>
+                All off
               </Button>
-              <Button size="small" variant="text" color="error" onClick={clearAll}>
+              <Button size="small" variant="text" color="error" onClick={clearAll} sx={{ fontSize: 10, py: 0.25, minWidth: 0 }}>
                 Clear
               </Button>
             </>
           )}
-          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={add}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+            onClick={add}
+            sx={COMPACT.btnSmall}
+          >
             Add
           </Button>
         </Box>
@@ -230,53 +233,52 @@ function KeyValueEditor({
       {items.length === 0 ? (
         <Box
           sx={{
-            py: 4,
-            px: 2,
+            py: 1.5,
+            px: 1,
             textAlign: 'center',
             border: 1,
             borderStyle: 'dashed',
             borderColor: 'divider',
-            borderRadius: 1,
+            borderRadius: 0.75,
             bgcolor: 'action.hover'
           }}
         >
-          <Typography variant="body2" fontWeight={600} gutterBottom>
+          <Typography sx={{ ...COMPACT.caption, fontWeight: 600, display: 'block', mb: 0.25 }}>
             {emptyTitle}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+          <Typography sx={{ ...COMPACT.caption, display: 'block', mb: 0.75 }}>
             {emptyHint}
           </Typography>
-          <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={add}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+            onClick={add}
+            sx={COMPACT.btnSmall}
+          >
             Add row
           </Button>
         </Box>
       ) : (
-        <Box
-          sx={{
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            overflow: 'hidden'
-          }}
-        >
+        <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 0.75, overflow: 'hidden' }}>
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: allowFiles ? '36px 1fr 1fr auto' : '36px 1fr 1fr 40px',
-              gap: 1,
+              gridTemplateColumns: allowFiles ? '28px 1fr 1fr auto' : '28px 1fr 1fr 32px',
+              gap: 0.5,
               alignItems: 'center',
-              px: 1.5,
-              py: 0.75,
+              px: 0.75,
+              py: 0.375,
               bgcolor: 'action.selected',
               borderBottom: 1,
               borderColor: 'divider'
             }}
           >
             <Box />
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+            <Typography sx={{ ...COMPACT.caption, fontWeight: 700, textTransform: 'uppercase' }}>
               {keyLabel}
             </Typography>
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+            <Typography sx={{ ...COMPACT.caption, fontWeight: 700, textTransform: 'uppercase' }}>
               {valueLabel}
             </Typography>
             <Box />

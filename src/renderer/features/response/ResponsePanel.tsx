@@ -40,6 +40,7 @@ import {
   formatFullResponseText,
   serializeFullResponse
 } from '../../utils/formatResponse'
+import { COMPACT, formatBytes } from '../../theme/compact'
 
 export type ResponseBodyViewHandle = {
   openFind: () => void
@@ -68,7 +69,7 @@ const ResponseBodyView = memo(
     if (!el) return
 
     const observer = new ResizeObserver(([entry]) => {
-      setHeight(Math.max(160, Math.floor(entry.contentRect.height)))
+      setHeight(Math.max(120, Math.floor(entry.contentRect.height)))
     })
     observer.observe(el)
     return () => observer.disconnect()
@@ -88,10 +89,8 @@ const ResponseBodyView = memo(
 
   if (!body) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          Empty response body
-        </Typography>
+      <Box sx={{ p: 1.5, textAlign: 'center' }}>
+        <Typography sx={{ ...COMPACT.caption }}>Empty response body</Typography>
       </Box>
     )
   }
@@ -102,37 +101,44 @@ const ResponseBodyView = memo(
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          px: 1.5,
-          py: 0.75,
+          gap: 0.5,
+          px: 0.75,
+          py: 0.25,
           borderBottom: 1,
           borderColor: 'divider',
           bgcolor: 'action.hover',
-          flexShrink: 0
+          flexShrink: 0,
+          minHeight: 24
         }}
       >
-        <Chip label={view.label} size="small" color={view.language === 'json' ? 'primary' : 'default'} />
-        <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
-          {body.length.toLocaleString()} characters
+        <Chip
+          label={view.label}
+          size="small"
+          color={view.language === 'json' ? 'primary' : 'default'}
+          sx={COMPACT.chip}
+        />
+        <Typography sx={{ ...COMPACT.caption, flex: 1 }}>
+          {body.length.toLocaleString()} chars
         </Typography>
         <ToggleButtonGroup
           size="small"
           exclusive
           value={wordWrap ? 'wrap' : 'nowrap'}
           onChange={(_, value) => value && setWordWrap(value === 'wrap')}
+          sx={{ '& .MuiToggleButton-root': { py: 0.125, px: 0.5 } }}
         >
           <ToggleButton value="wrap" aria-label="Wrap lines">
-            <WrapTextIcon sx={{ fontSize: 18 }} />
+            <WrapTextIcon sx={COMPACT.icon} />
           </ToggleButton>
           <ToggleButton value="nowrap" aria-label="No wrap">
-            <Typography variant="caption" sx={{ px: 0.5, fontWeight: 600 }}>
+            <Typography sx={{ px: 0.25, fontSize: 10, fontWeight: 700, lineHeight: 1 }}>
               &gt;&gt;
             </Typography>
           </ToggleButton>
         </ToggleButtonGroup>
         <Tooltip title={copied ? 'Copied!' : 'Copy body'}>
-          <IconButton size="small" onClick={() => void copyBody()}>
-            <ContentCopyIcon sx={{ fontSize: 18 }} />
+          <IconButton size="small" onClick={() => void copyBody()} sx={COMPACT.iconBtn}>
+            <ContentCopyIcon sx={COMPACT.icon} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -152,15 +158,16 @@ const ResponseBodyView = memo(
             domReadOnly: true,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
-            fontSize: 13,
-            lineHeight: 20,
+            fontSize: 11,
+            lineHeight: 16,
             fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace',
             wordWrap: wordWrap ? 'on' : 'off',
             lineNumbers: 'on',
+            lineNumbersMinChars: 3,
             folding: view.language === 'json' || view.language === 'xml' || view.language === 'html',
-            renderLineHighlight: 'all',
-            padding: { top: 12, bottom: 12 },
-            scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
+            renderLineHighlight: 'line',
+            padding: { top: 4, bottom: 4 },
+            scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             contextmenu: false
@@ -192,20 +199,6 @@ const HtmlPreview = memo(function HtmlPreview({
   return (
     <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <Box
-        sx={{
-          px: 1.5,
-          py: 0.75,
-          borderBottom: 1,
-          borderColor: 'divider',
-          bgcolor: 'action.hover',
-          flexShrink: 0
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          Rendered HTML preview (scripts disabled for safety)
-        </Typography>
-      </Box>
-      <Box
         component="iframe"
         key={responseKey}
         title="HTML preview"
@@ -214,7 +207,7 @@ const HtmlPreview = memo(function HtmlPreview({
         sx={{
           flex: 1,
           width: '100%',
-          minHeight: 280,
+          minHeight: 120,
           border: 0,
           bgcolor: '#fff'
         }}
@@ -375,7 +368,7 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
 function KeyValueList({ items, emptyText }: { items: KeyValue[]; emptyText: string }) {
   if (items.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+      <Typography sx={{ ...COMPACT.caption, p: 1 }}>
         {emptyText}
       </Typography>
     )
@@ -387,7 +380,8 @@ function KeyValueList({ items, emptyText }: { items: KeyValue[]; emptyText: stri
         <ListItem
           key={item.id}
           sx={{
-            py: 0.75,
+            py: 0.375,
+            px: 1,
             borderBottom: 1,
             borderColor: 'divider',
             alignItems: 'flex-start'
@@ -399,12 +393,15 @@ function KeyValueList({ items, emptyText }: { items: KeyValue[]; emptyText: stri
             primaryTypographyProps={{
               variant: 'caption',
               fontWeight: 700,
+              fontSize: 10,
               fontFamily: 'Consolas, monospace',
-              color: 'primary.main'
+              color: 'primary.main',
+              lineHeight: 1.3
             }}
             secondaryTypographyProps={{
-              variant: 'body2',
-              sx: { wordBreak: 'break-all', mt: 0.25 }
+              variant: 'caption',
+              fontSize: 11,
+              sx: { wordBreak: 'break-all', mt: 0.125, lineHeight: 1.35 }
             }}
           />
         </ListItem>
@@ -441,15 +438,25 @@ function ResponseActions({ response }: { response: HttpResponse }) {
   }, [response])
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.125 }}>
       <Tooltip title={copied ? 'Copied!' : 'Copy full response'}>
-        <IconButton size="small" onClick={() => void copyFullResponse()} aria-label="Copy full response">
-          <ContentCopyIcon sx={{ fontSize: 18 }} />
+        <IconButton
+          size="small"
+          onClick={() => void copyFullResponse()}
+          aria-label="Copy full response"
+          sx={COMPACT.iconBtn}
+        >
+          <ContentCopyIcon sx={COMPACT.icon} />
         </IconButton>
       </Tooltip>
       <Tooltip title="Download response">
-        <IconButton size="small" onClick={() => void downloadFullResponse()} aria-label="Download response">
-          <FileDownloadIcon sx={{ fontSize: 18 }} />
+        <IconButton
+          size="small"
+          onClick={() => void downloadFullResponse()}
+          aria-label="Download response"
+          sx={COMPACT.iconBtn}
+        >
+          <FileDownloadIcon sx={COMPACT.icon} />
         </IconButton>
       </Tooltip>
     </Box>
@@ -530,8 +537,8 @@ export default memo(function ResponsePanel() {
 
   if (!response) {
     return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color="text.secondary">Send a request to see the response</Typography>
+      <Box sx={{ p: 1.5, textAlign: 'center' }}>
+        <Typography sx={COMPACT.caption}>Send a request to see the response</Typography>
       </Box>
     )
   }
@@ -549,42 +556,53 @@ export default memo(function ResponsePanel() {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          px: 2,
-          py: 1,
+          gap: 0.75,
           borderBottom: 1,
-          borderColor: 'divider'
+          borderColor: 'divider',
+          ...COMPACT.bar
         }}
       >
-        <Chip label={`${response.statusCode} ${response.statusText}`} color={statusColor} size="small" />
-        <Typography variant="caption">{response.durationMs} ms</Typography>
-        <Typography variant="caption">{response.sizeBytes.toLocaleString()} B</Typography>
-        <Box sx={{ flex: 1 }} />
-        {bodyView && tab === 'body' && (
-          <Chip label={bodyView.label} size="small" variant="outlined" />
-        )}
+        <Tooltip title={`${response.statusCode} ${response.statusText}`}>
+          <Chip
+            label={response.statusCode}
+            color={statusColor}
+            size="small"
+            sx={COMPACT.chip}
+          />
+        </Tooltip>
+        <Typography sx={COMPACT.caption}>
+          {response.durationMs}ms · {formatBytes(response.sizeBytes)}
+        </Typography>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Tabs
+            value={tab}
+            onChange={(_, value: ResponseTab) => setTab(value)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              minHeight: 28,
+              '& .MuiTabs-indicator': { height: 2 },
+              '& .MuiTabs-flexContainer': { gap: 0.25 }
+            }}
+          >
+            {tabs.map((tabId) => (
+              <Tab
+                key={tabId}
+                value={tabId}
+                label={
+                  tabId === 'tests'
+                    ? `Tests ${testsSummary}`
+                    : tabId === 'console'
+                      ? `Console ${scriptLogs.length}`
+                      : TAB_LABELS[tabId]
+                }
+                sx={COMPACT.tabRoot}
+              />
+            ))}
+          </Tabs>
+        </Box>
         <ResponseActions response={response} />
       </Box>
-      <Tabs
-        value={tab}
-        onChange={(_, value: ResponseTab) => setTab(value)}
-        sx={{ minHeight: 36, px: 1 }}
-      >
-        {tabs.map((tabId) => (
-          <Tab
-            key={tabId}
-            value={tabId}
-            label={
-              tabId === 'tests'
-                ? `Tests (${testsSummary})`
-                : tabId === 'console'
-                  ? `Console (${scriptLogs.length})`
-                  : TAB_LABELS[tabId]
-            }
-            sx={{ minHeight: 36 }}
-          />
-        ))}
-      </Tabs>
 
       {tab === 'body' && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -592,14 +610,13 @@ export default memo(function ResponsePanel() {
             sx={{
               flex: 1,
               minHeight: 0,
-              m: 1,
               border: 1,
               borderColor: 'divider',
-              borderRadius: 1,
               overflow: 'hidden',
               bgcolor: 'background.paper',
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              ...COMPACT.panel
             }}
           >
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -628,12 +645,11 @@ export default memo(function ResponsePanel() {
           sx={{
             flex: 1,
             minHeight: 0,
-            m: 1,
             border: 1,
             borderColor: 'divider',
-            borderRadius: 1,
             overflow: 'hidden',
-            bgcolor: 'background.paper'
+            bgcolor: 'background.paper',
+            ...COMPACT.panel
           }}
         >
           <HtmlPreview html={response.body} responseKey={responseKey} />
@@ -641,9 +657,9 @@ export default memo(function ResponsePanel() {
       )}
 
       {tab !== 'body' && tab !== 'preview' && (
-        <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', ...COMPACT.panel }}>
           {tab === 'headers' && (
-            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 0.75, overflow: 'hidden' }}>
               <KeyValueList
                 items={Object.entries(response.headers).map(([key, value], i) => ({
                   id: String(i),
@@ -656,30 +672,35 @@ export default memo(function ResponsePanel() {
             </Box>
           )}
           {tab === 'cookies' && (
-            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+            <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 0.75, overflow: 'hidden' }}>
               <KeyValueList
                 items={response.cookies}
                 emptyText="No cookies set in this response"
               />
               {response.cookies.length > 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', p: 1.5, pt: 0 }}>
+                <Typography sx={{ ...COMPACT.caption, display: 'block', px: 1, pb: 0.75 }}>
                   Stored and sent on later requests to the same domain
                 </Typography>
               )}
             </Box>
           )}
           {tab === 'tests' && testResults.length > 0 && (
-            <List dense>
+            <List dense disablePadding>
               {testResults.map((t, i) => (
-                <ListItem key={i}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>
+                <ListItem key={i} sx={{ py: 0.375, px: 1 }}>
+                  <ListItemIcon sx={{ minWidth: 24 }}>
                     {t.passed ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
+                      <CheckCircleIcon color="success" sx={{ fontSize: 14 }} />
                     ) : (
-                      <CancelIcon color="error" fontSize="small" />
+                      <CancelIcon color="error" sx={{ fontSize: 14 }} />
                     )}
                   </ListItemIcon>
-                  <ListItemText primary={t.name} secondary={t.error} />
+                  <ListItemText
+                    primary={t.name}
+                    secondary={t.error}
+                    primaryTypographyProps={{ variant: 'caption', fontSize: 11, lineHeight: 1.3 }}
+                    secondaryTypographyProps={{ variant: 'caption', fontSize: 10, lineHeight: 1.3 }}
+                  />
                 </ListItem>
               ))}
             </List>
@@ -689,9 +710,10 @@ export default memo(function ResponsePanel() {
               component="pre"
               sx={{
                 m: 0,
-                p: 1.5,
+                p: 0.75,
                 fontFamily: 'Consolas, monospace',
-                fontSize: 13,
+                fontSize: 11,
+                lineHeight: 1.35,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word'
               }}

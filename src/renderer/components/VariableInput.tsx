@@ -36,7 +36,7 @@ interface Props {
   fullWidth?: boolean
 }
 
-const INPUT_PADDING = '8.5px 14px'
+const INPUT_PADDING = '4px 8px'
 
 let measureCanvas: HTMLCanvasElement | null = null
 function measureTextWidth(text: string, style: CSSStyleDeclaration): number {
@@ -262,9 +262,9 @@ function VariableInput({
           sx={{
             position: 'absolute',
             inset: 0,
-            px: '14px',
-            py: '8.5px',
-            fontSize: '0.875rem',
+            px: '8px',
+            py: '4px',
+            fontSize: '0.75rem',
             fontFamily: theme.typography.fontFamily,
             lineHeight: '1.4375em',
             letterSpacing: '0.00938em',
@@ -329,7 +329,7 @@ function VariableInput({
           }}
           sx={{
             width: '100%',
-            fontSize: '0.875rem',
+            fontSize: '0.75rem',
             position: 'relative',
             zIndex: 1,
             '& .MuiInputBase-input': {
