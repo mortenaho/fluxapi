@@ -9,9 +9,6 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
-  Button,
-  Divider,
-  Alert,
   IconButton,
   Tooltip,
   ToggleButton,
@@ -24,7 +21,9 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import WrapTextIcon from '@mui/icons-material/WrapText'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import CloseIcon from '@mui/icons-material/Close'
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import type { editor } from 'monaco-editor'
 import { useTheme } from '@mui/material/styles'
 import Editor from '@monaco-editor/react'
 import type { HttpResponse, KeyValue } from '@shared/types'
@@ -33,6 +32,7 @@ import JsonPathHelpDialog from './JsonPathHelpDialog'
 import {
   detectResponseBody,
   formatQueryResult,
+  isHtmlResponse,
   runJsonPathQuery
 } from '../../utils/jsonQuery'
 import {
@@ -41,17 +41,18 @@ import {
   serializeFullResponse
 } from '../../utils/formatResponse'
 
-const ResponseBodyView = memo(function ResponseBodyView({
-  body,
-  contentType,
-  responseKey
-}: {
-  body: string
-  contentType: string
-  responseKey: string
-}) {
+export type ResponseBodyViewHandle = {
+  openFind: () => void
+}
+
+const ResponseBodyView = memo(
+  forwardRef<
+    ResponseBodyViewHandle,
+    { body: string; contentType: string; responseKey: string }
+  >(function ResponseBodyView({ body, contentType, responseKey }, ref) {
   const theme = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const [height, setHeight] = useState(280)
   const [wordWrap, setWordWrap] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -78,6 +79,12 @@ const ResponseBodyView = memo(function ResponseBodyView({
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1500)
   }, [view.formatted])
+
+  useImperativeHandle(ref, () => ({
+    openFind: () => {
+      editorRef.current?.getAction('actions.find')?.run()
+    }
+  }), [])
 
   if (!body) {
     return (
@@ -136,6 +143,9 @@ const ResponseBodyView = memo(function ResponseBodyView({
           height={height}
           language={view.language}
           value={view.formatted}
+          onMount={(editorInstance) => {
+            editorRef.current = editorInstance
+          }}
           theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs'}
           options={{
             readOnly: true,
@@ -159,14 +169,72 @@ const ResponseBodyView = memo(function ResponseBodyView({
       </Box>
     </Box>
   )
+}))
+
+type ResponseTab = 'body' | 'preview' | 'headers' | 'cookies' | 'tests' | 'console'
+
+const TAB_LABELS: Record<ResponseTab, string> = {
+  body: 'Body',
+  preview: 'Preview',
+  headers: 'Headers',
+  cookies: 'Cookies',
+  tests: 'Tests',
+  console: 'Console'
+}
+
+const HtmlPreview = memo(function HtmlPreview({
+  html,
+  responseKey
+}: {
+  html: string
+  responseKey: string
+}) {
+  return (
+    <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Box
+        sx={{
+          px: 1.5,
+          py: 0.75,
+          borderBottom: 1,
+          borderColor: 'divider',
+          bgcolor: 'action.hover',
+          flexShrink: 0
+        }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          Rendered HTML preview (scripts disabled for safety)
+        </Typography>
+      </Box>
+      <Box
+        component="iframe"
+        key={responseKey}
+        title="HTML preview"
+        sandbox=""
+        srcDoc={html}
+        sx={{
+          flex: 1,
+          width: '100%',
+          minHeight: 280,
+          border: 0,
+          bgcolor: '#fff'
+        }}
+      />
+    </Box>
+  )
 })
 
 const JsonQueryPanel = memo(function JsonQueryPanel({
   data,
-  responseKey
+  responseKey,
+  open,
+  onClose,
+  inputRef
 }: {
   data: unknown
   responseKey: string
+  open: boolean
+  onClose: () => void
+  inputRef: React.RefObject<HTMLInputElement | null>
 }) {
   const [jsonQuery, setJsonQuery] = useState('')
   const [queryResult, setQueryResult] = useState<string | null>(null)
@@ -178,6 +246,12 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
     setQueryResult(null)
     setQueryError(null)
   }, [responseKey])
+
+  useEffect(() => {
+    if (open) {
+      window.setTimeout(() => inputRef.current?.focus(), 0)
+    }
+  }, [open, inputRef])
 
   const runQuery = useCallback(() => {
     if (!jsonQuery.trim()) return
@@ -197,68 +271,96 @@ const JsonQueryPanel = memo(function JsonQueryPanel({
     setQueryResult(null)
   }, [])
 
+  if (!open) return null
+
   return (
-    <Box sx={{ p: 1, flexShrink: 0, bgcolor: 'action.hover' }}>
-      <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-          JSONPath
-        </Typography>
+    <Box
+      sx={{
+        px: 0.75,
+        py: 0.25,
+        flexShrink: 0,
+        borderTop: 1,
+        borderColor: 'divider',
+        bgcolor: 'action.hover'
+      }}
+    >
+      <Box sx={{ display: 'flex', gap: 0.25, alignItems: 'center' }}>
         <Tooltip title="JSONPath help">
-          <IconButton size="small" onClick={() => setHelpOpen(true)} aria-label="JSONPath help">
-            <HelpOutlineIcon sx={{ fontSize: 16 }} />
+          <IconButton
+            size="small"
+            onClick={() => setHelpOpen(true)}
+            aria-label="JSONPath help"
+            sx={{ p: 0.25 }}
+          >
+            <HelpOutlineIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
         <TextField
           size="small"
           fullWidth
-          placeholder="$.data.items[0].name"
+          inputRef={inputRef}
+          placeholder="JSONPath — e.g. $.data.items[0].name"
           value={jsonQuery}
           onChange={(e) => setJsonQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') runQuery()
+            if (e.key === 'Escape') onClose()
           }}
-          sx={{ bgcolor: 'background.paper' }}
+          sx={{
+            bgcolor: 'background.paper',
+            '& .MuiInputBase-root': { height: 24, py: 0 },
+            '& .MuiInputBase-input': { py: 0.25, px: 0.75 }
+          }}
           slotProps={{
-            input: { sx: { fontFamily: 'Consolas, monospace', fontSize: 13 } }
+            input: { sx: { fontFamily: 'Consolas, monospace', fontSize: 11 } }
           }}
         />
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<SearchIcon />}
-          onClick={runQuery}
-          disabled={!jsonQuery.trim()}
-        >
-          Query
-        </Button>
+        <Tooltip title="Run query">
+          <span>
+            <IconButton
+              size="small"
+              onClick={runQuery}
+              disabled={!jsonQuery.trim()}
+              aria-label="Run JSONPath query"
+              sx={{ p: 0.25 }}
+            >
+              <SearchIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Close (Esc)">
+          <IconButton size="small" onClick={onClose} aria-label="Close search" sx={{ p: 0.25 }}>
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
       {queryError && (
-        <Alert severity="error" sx={{ py: 0 }}>
+        <Typography variant="caption" color="error" sx={{ display: 'block', px: 0.5, lineHeight: 1.3 }}>
           {queryError}
-        </Alert>
+        </Typography>
       )}
       {queryResult !== null && !queryError && (
-        <Box sx={{ maxHeight: 160, overflow: 'auto', mt: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-            Query result
-          </Typography>
-          <Box
-            component="pre"
-            sx={{
-              m: 0,
-              p: 1.5,
-              fontSize: 12,
-              fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              bgcolor: 'background.paper',
-              borderRadius: 1,
-              border: 1,
-              borderColor: 'divider'
-            }}
-          >
-            {queryResult}
-          </Box>
+        <Box
+          component="pre"
+          sx={{
+            m: 0,
+            mt: 0.25,
+            px: 0.75,
+            py: 0.25,
+            maxHeight: 72,
+            overflow: 'auto',
+            fontSize: 10,
+            lineHeight: 1.35,
+            fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            bgcolor: 'background.paper',
+            borderRadius: 0.5,
+            border: 1,
+            borderColor: 'divider'
+          }}
+        >
+          {queryResult}
         </Box>
       )}
       <JsonPathHelpDialog
@@ -357,7 +459,11 @@ function ResponseActions({ response }: { response: HttpResponse }) {
 export default memo(function ResponsePanel() {
   const response = useAppStore((s) => s.response)
   const testResults = useAppStore((s) => s.testResults)
-  const [tab, setTab] = useState(0)
+  const scriptLogs = useAppStore((s) => s.scriptLogs)
+  const [tab, setTab] = useState<ResponseTab>('body')
+  const [queryPanelOpen, setQueryPanelOpen] = useState(false)
+  const bodyViewRef = useRef<ResponseBodyViewHandle>(null)
+  const queryInputRef = useRef<HTMLInputElement>(null)
 
   const contentType = useMemo(() => {
     if (!response?.headers) return ''
@@ -370,7 +476,57 @@ export default memo(function ResponsePanel() {
     [response?.body, contentType]
   )
 
+  const showHtmlPreview = useMemo(
+    () => (response?.body ? isHtmlResponse(response.body, contentType) : false),
+    [response?.body, contentType]
+  )
+
   const responseKey = response ? `${response.statusCode}:${response.body.length}` : ''
+
+  const tabs = useMemo(() => {
+    const list: ResponseTab[] = ['body']
+    if (showHtmlPreview) list.push('preview')
+    list.push('headers', 'cookies')
+    if (testResults.length > 0) list.push('tests')
+    if (scriptLogs.length > 0) list.push('console')
+    return list
+  }, [showHtmlPreview, testResults.length, scriptLogs.length])
+
+  useEffect(() => {
+    setTab('body')
+    setQueryPanelOpen(false)
+  }, [responseKey])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && queryPanelOpen) {
+        setQueryPanelOpen(false)
+        return
+      }
+
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'f') return
+      if (tab !== 'body' || !response) return
+
+      e.preventDefault()
+      if (bodyView?.data != null) {
+        setQueryPanelOpen(true)
+      } else {
+        bodyViewRef.current?.openFind()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [tab, response, bodyView?.data, queryPanelOpen])
+
+  useEffect(() => {
+    if (!tabs.includes(tab)) setTab('body')
+  }, [tab, tabs])
+
+  const testsSummary =
+    testResults.length > 0
+      ? `${testResults.filter((t) => t.passed).length}/${testResults.length}`
+      : ''
 
   if (!response) {
     return (
@@ -404,21 +560,33 @@ export default memo(function ResponsePanel() {
         <Typography variant="caption">{response.durationMs} ms</Typography>
         <Typography variant="caption">{response.sizeBytes.toLocaleString()} B</Typography>
         <Box sx={{ flex: 1 }} />
-        {bodyView && tab === 0 && (
+        {bodyView && tab === 'body' && (
           <Chip label={bodyView.label} size="small" variant="outlined" />
         )}
         <ResponseActions response={response} />
       </Box>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 36, px: 1 }}>
-        <Tab label="Body" sx={{ minHeight: 36 }} />
-        <Tab label="Headers" sx={{ minHeight: 36 }} />
-        <Tab label="Cookies" sx={{ minHeight: 36 }} />
-        {testResults.length > 0 && (
-          <Tab label={`Tests (${testResults.filter((t) => t.passed).length}/${testResults.length})`} sx={{ minHeight: 36 }} />
-        )}
+      <Tabs
+        value={tab}
+        onChange={(_, value: ResponseTab) => setTab(value)}
+        sx={{ minHeight: 36, px: 1 }}
+      >
+        {tabs.map((tabId) => (
+          <Tab
+            key={tabId}
+            value={tabId}
+            label={
+              tabId === 'tests'
+                ? `Tests (${testsSummary})`
+                : tabId === 'console'
+                  ? `Console (${scriptLogs.length})`
+                  : TAB_LABELS[tabId]
+            }
+            sx={{ minHeight: 36 }}
+          />
+        ))}
       </Tabs>
 
-      {tab === 0 && (
+      {tab === 'body' && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <Box
             sx={{
@@ -429,33 +597,52 @@ export default memo(function ResponsePanel() {
               borderColor: 'divider',
               borderRadius: 1,
               overflow: 'hidden',
-              bgcolor: 'background.paper'
+              bgcolor: 'background.paper',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
-            <ResponseBodyView
-              body={response.body}
-              contentType={contentType}
-              responseKey={responseKey}
-            />
-          </Box>
-
-          <Divider />
-
-          {bodyView?.data != null ? (
-            <JsonQueryPanel data={bodyView.data} responseKey={responseKey} />
-          ) : (
-            <Box sx={{ p: 1, flexShrink: 0, bgcolor: 'action.hover' }}>
-              <Typography variant="caption" color="text.secondary">
-                JSON query is available when the response body is valid JSON
-              </Typography>
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <ResponseBodyView
+                ref={bodyViewRef}
+                body={response.body}
+                contentType={contentType}
+                responseKey={responseKey}
+              />
             </Box>
-          )}
+            {bodyView?.data != null && (
+              <JsonQueryPanel
+                data={bodyView.data}
+                responseKey={responseKey}
+                open={queryPanelOpen}
+                onClose={() => setQueryPanelOpen(false)}
+                inputRef={queryInputRef}
+              />
+            )}
+          </Box>
         </Box>
       )}
 
-      {tab !== 0 && (
+      {tab === 'preview' && showHtmlPreview && (
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            m: 1,
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: 1,
+            overflow: 'hidden',
+            bgcolor: 'background.paper'
+          }}
+        >
+          <HtmlPreview html={response.body} responseKey={responseKey} />
+        </Box>
+      )}
+
+      {tab !== 'body' && tab !== 'preview' && (
         <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
-          {tab === 1 && (
+          {tab === 'headers' && (
             <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
               <KeyValueList
                 items={Object.entries(response.headers).map(([key, value], i) => ({
@@ -468,7 +655,7 @@ export default memo(function ResponsePanel() {
               />
             </Box>
           )}
-          {tab === 2 && (
+          {tab === 'cookies' && (
             <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
               <KeyValueList
                 items={response.cookies}
@@ -481,7 +668,7 @@ export default memo(function ResponsePanel() {
               )}
             </Box>
           )}
-          {tab === 3 && testResults.length > 0 && (
+          {tab === 'tests' && testResults.length > 0 && (
             <List dense>
               {testResults.map((t, i) => (
                 <ListItem key={i}>
@@ -496,6 +683,21 @@ export default memo(function ResponsePanel() {
                 </ListItem>
               ))}
             </List>
+          )}
+          {tab === 'console' && scriptLogs.length > 0 && (
+            <Box
+              component="pre"
+              sx={{
+                m: 0,
+                p: 1.5,
+                fontFamily: 'Consolas, monospace',
+                fontSize: 13,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}
+            >
+              {scriptLogs.join('\n')}
+            </Box>
           )}
         </Box>
       )}

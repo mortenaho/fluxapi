@@ -14,10 +14,11 @@ import CodeEditor from '../../components/CodeEditor'
 import { useRequestEditor } from '../../contexts/RequestEditorContext'
 
 const PM_API = [
-  'pm.environment.set(key, value)',
-  'pm.environment.get(key)',
-  'pm.collectionVariables.set(key, value)',
-  'pm.request.url / .method / .headers',
+  'alert(message) · confirm(message)',
+  'console.log / warn / error',
+  'pm.environment.set/get/unset',
+  'pm.collectionVariables.set/get/unset',
+  'pm.request.url / .method / .body',
   'pm.response.json() / .text()',
   'pm.test(name, fn) · pm.expect(x).to.equal(y)'
 ]

@@ -167,6 +167,7 @@ export interface SendResult {
   response: HttpResponse
   testResults: TestResult[]
   environmentChanges: KeyValue[]
+  scriptLogs: string[]
 }
 
 export interface WsMessage {

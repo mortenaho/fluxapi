@@ -1,11 +1,16 @@
 import vm from 'node:vm'
-import type { HttpRequestPayload, HttpResponse, KeyValue, TestResult } from '../../../shared/types'
+import type { HttpMethod, HttpRequestPayload, HttpResponse, KeyValue, TestResult } from '../../../shared/types'
 
 export interface ScriptContext {
   request: HttpRequestPayload
   response?: HttpResponse
   environmentVars: KeyValue[]
   collectionVars: KeyValue[]
+}
+
+export interface ScriptHostApi {
+  alert?: (message: string) => void
+  confirm?: (message: string) => boolean
 }
 
 export interface ScriptResult {
@@ -16,10 +21,25 @@ export interface ScriptResult {
   console: string[]
 }
 
+function pushLog(result: ScriptResult, level: string, args: unknown[]) {
+  const line = args.map(String).join(' ')
+  result.console.push(level === 'log' ? line : `[${level}] ${line}`)
+}
+
+function mapVars(map: Map<string, string>): KeyValue[] {
+  return Array.from(map.entries()).map(([key, value], i) => ({
+    id: String(i),
+    key,
+    value,
+    enabled: true
+  }))
+}
+
 export function runScript(
   script: string,
   context: ScriptContext,
-  phase: 'prerequest' | 'test'
+  phase: 'prerequest' | 'test',
+  host: ScriptHostApi = {}
 ): ScriptResult {
   const result: ScriptResult = {
     environmentChanges: [...context.environmentVars],
@@ -35,24 +55,64 @@ export function runScript(
   const colMap = new Map(context.collectionVars.map((v) => [v.key, v.value]))
   const testResults: TestResult[] = []
 
+  let reqUrl = context.request.url
+  let reqMethod = context.request.method
+  let reqBody = context.request.bodyRaw
+  let reqHeaders = context.request.headers.map((h) => ({ ...h }))
+
+  const syncRequestChanges = () => {
+    result.requestChanges = {
+      url: reqUrl,
+      method: reqMethod,
+      bodyRaw: reqBody,
+      headers: reqHeaders
+    }
+  }
+
   const pm = {
     environment: {
       set: (key: string, value: string) => envMap.set(key, value),
       get: (key: string) => envMap.get(key),
-      unset: (key: string) => { envMap.delete(key) }
+      unset: (key: string) => {
+        envMap.delete(key)
+      }
     },
     collectionVariables: {
       set: (key: string, value: string) => colMap.set(key, value),
       get: (key: string) => colMap.get(key),
-      unset: (key: string) => { colMap.delete(key) }
+      unset: (key: string) => {
+        colMap.delete(key)
+      }
     },
     request: {
-      method: context.request.method,
-      url: context.request.url,
-      headers: Object.fromEntries(
-        context.request.headers.filter((h) => h.enabled).map((h) => [h.key, h.value])
-      ),
-      body: context.request.bodyRaw
+      get method() {
+        return reqMethod
+      },
+      set method(value: string) {
+        reqMethod = value.toUpperCase() as HttpMethod
+        syncRequestChanges()
+      },
+      get url() {
+        return reqUrl
+      },
+      set url(value: string) {
+        reqUrl = value
+        syncRequestChanges()
+      },
+      get headers() {
+        return Object.fromEntries(
+          reqHeaders.filter((h) => h.enabled).map((h) => [h.key, h.value])
+        )
+      },
+      get body() {
+        return { mode: 'raw', raw: reqBody }
+      },
+      set body(value: { raw?: string; mode?: string }) {
+        if (value?.raw !== undefined) {
+          reqBody = value.raw
+          syncRequestChanges()
+        }
+      }
     },
     response: context.response
       ? {
@@ -61,7 +121,11 @@ export function runScript(
           headers: context.response.headers,
           text: () => context.response!.body,
           json: () => {
-            try { return JSON.parse(context.response!.body) } catch { return null }
+            try {
+              return JSON.parse(context.response!.body)
+            } catch {
+              return null
+            }
           }
         }
       : null,
@@ -70,7 +134,11 @@ export function runScript(
         fn()
         testResults.push({ name, passed: true })
       } catch (e) {
-        testResults.push({ name, passed: false, error: e instanceof Error ? e.message : String(e) })
+        testResults.push({
+          name,
+          passed: false,
+          error: e instanceof Error ? e.message : String(e)
+        })
       }
     },
     expect: (actual: unknown) => ({
@@ -84,7 +152,9 @@ export function runScript(
           }
         },
         be: {
-          ok: () => { if (!actual) throw new Error(`Expected truthy value but got ${actual}`) }
+          ok: () => {
+            if (!actual) throw new Error(`Expected truthy value but got ${actual}`)
+          }
         }
       }
     }),
@@ -94,28 +164,38 @@ export function runScript(
     }
   }
 
-  try {
-    const sandbox = { pm, console: { log: (...args: unknown[]) => result.console.push(args.map(String).join(' ')) } }
-    vm.createContext(sandbox)
-    vm.runInContext(script, sandbox, { timeout: 5000, filename: `${phase}-script.js` })
-  } catch (e) {
-    if (phase === 'test') {
-      testResults.push({
-        name: 'Script execution',
-        passed: false,
-        error: e instanceof Error ? e.message : String(e)
-      })
-    } else {
-      result.console.push(`Pre-request script error: ${e instanceof Error ? e.message : String(e)}`)
+  const sandbox = {
+    pm,
+    alert: (message?: unknown) => {
+      const text = String(message ?? '')
+      if (host.alert) host.alert(text)
+      else pushLog(result, 'log', [`alert: ${text}`])
+    },
+    confirm: (message?: unknown) => {
+      const text = String(message ?? '')
+      if (host.confirm) return host.confirm(text)
+      pushLog(result, 'log', [`confirm: ${text} (default true)`])
+      return true
+    },
+    console: {
+      log: (...args: unknown[]) => pushLog(result, 'log', args),
+      warn: (...args: unknown[]) => pushLog(result, 'warn', args),
+      error: (...args: unknown[]) => pushLog(result, 'error', args)
     }
   }
 
-  result.environmentChanges = Array.from(envMap.entries()).map(([key, value], i) => ({
-    id: String(i), key, value, enabled: true
-  }))
-  result.collectionChanges = Array.from(colMap.entries()).map(([key, value], i) => ({
-    id: String(i), key, value, enabled: true
-  }))
+  try {
+    vm.createContext(sandbox)
+    vm.runInContext(script, sandbox, { timeout: 5000, filename: `${phase}-script.js` })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    const label = phase === 'prerequest' ? 'Pre-request script' : 'Test script'
+    testResults.push({ name: label, passed: false, error: message })
+    result.console.push(`${label} error: ${message}`)
+  }
+
+  result.environmentChanges = mapVars(envMap)
+  result.collectionChanges = mapVars(colMap)
   result.testResults = testResults
 
   return result

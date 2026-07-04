@@ -50,53 +50,90 @@ import type { HttpRequestPayload } from '../../../shared/types'
 import { APP_INFO } from '../../../shared/appInfo'
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
+  const scriptHost = {
+    alert: (message: string) => {
+      const win = getMainWindow()
+      if (win) {
+        dialog.showMessageBoxSync(win, {
+          type: 'info',
+          title: 'FluxAPI Script',
+          message,
+          buttons: ['OK']
+        })
+      }
+    },
+    confirm: (message: string) => {
+      const win = getMainWindow()
+      if (!win) return true
+      const response = dialog.showMessageBoxSync(win, {
+        type: 'question',
+        title: 'FluxAPI Script',
+        message,
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      })
+      return response === 0
+    }
+  }
+
   ipcMain.handle('request:send', async (_, payload: HttpRequestPayload) => {
     const settings = getSettings()
     const activeEnv = getActiveEnvironment()
-    const envVars = activeEnv?.variables || []
+    let envVars = activeEnv?.variables || []
+    let collectionVars = payload.collectionVariables || []
+    const scriptLogs: string[] = []
 
     let processedPayload = { ...payload }
 
-    if (payload.preRequestScript) {
+    let testResults: { name: string; passed: boolean; error?: string }[] = []
+    let preRequestTestResults: { name: string; passed: boolean; error?: string }[] = []
+
+    if (payload.preRequestScript?.trim()) {
       const scriptResult = runScript(
         payload.preRequestScript,
-        { request: payload, environmentVars: envVars, collectionVars: payload.collectionVariables || [] },
-        'prerequest'
+        { request: payload, environmentVars: envVars, collectionVars },
+        'prerequest',
+        scriptHost
       )
+      scriptLogs.push(...scriptResult.console.map((line) => `[pre-request] ${line}`))
       processedPayload = { ...processedPayload, ...scriptResult.requestChanges }
+      envVars = scriptResult.environmentChanges
+      collectionVars = scriptResult.collectionChanges
+      preRequestTestResults = scriptResult.testResults
       if (payload.collectionId) {
         updateCollection(payload.collectionId, { variables: scriptResult.collectionChanges })
       }
-      if (activeEnv && scriptResult.environmentChanges !== envVars) {
+      if (activeEnv) {
         saveEnvironment({ ...activeEnv, variables: scriptResult.environmentChanges })
       }
     }
 
-    const response = await sendHttpRequest(processedPayload, envVars, payload.collectionVariables || [], {
+    const response = await sendHttpRequest(processedPayload, envVars, collectionVars, {
       sslVerify: settings.sslVerify,
       timeoutMs: settings.timeoutMs,
       followRedirects: settings.followRedirects
     })
 
-    let testResults: { name: string; passed: boolean; error?: string }[] = []
-    let environmentChanges = envVars
+    testResults = [...preRequestTestResults]
 
-    if (payload.testScript) {
+    if (payload.testScript?.trim()) {
       const scriptResult = runScript(
         payload.testScript,
-        { request: processedPayload, response, environmentVars: envVars, collectionVars: payload.collectionVariables || [] },
-        'test'
+        { request: processedPayload, response, environmentVars: envVars, collectionVars },
+        'test',
+        scriptHost
       )
-      testResults = scriptResult.testResults
-      environmentChanges = scriptResult.environmentChanges
+      scriptLogs.push(...scriptResult.console.map((line) => `[test] ${line}`))
+      testResults = [...testResults, ...scriptResult.testResults]
+      envVars = scriptResult.environmentChanges
+      collectionVars = scriptResult.collectionChanges
 
       if (payload.collectionId) {
         updateCollection(payload.collectionId, { variables: scriptResult.collectionChanges })
       }
-    }
-
-    if (activeEnv && environmentChanges !== envVars) {
-      saveEnvironment({ ...activeEnv, variables: environmentChanges })
+      if (activeEnv) {
+        saveEnvironment({ ...activeEnv, variables: scriptResult.environmentChanges })
+      }
     }
 
     const reqSnapshot = payload.requestId ? getRequest(payload.requestId) : null
@@ -106,7 +143,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
       saveRequestLastResponse(reqSnapshot.id, response, testResults)
     }
 
-    return { response, testResults, environmentChanges }
+    return { response, testResults, environmentChanges: envVars, scriptLogs }
   })
 
   ipcMain.handle('request:cancel', (_, id: string) => cancelRequest(id))

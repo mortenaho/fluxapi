@@ -153,6 +153,10 @@ export type ResponseBodyView = {
   data: unknown | null
 }
 
+export function isHtmlResponse(body: string, contentType = ''): boolean {
+  return detectResponseBody(body, contentType).language === 'html'
+}
+
 export function detectResponseBody(body: string, contentType = ''): ResponseBodyView {
   const parsed = parseResponseJson(body)
   if (parsed) {

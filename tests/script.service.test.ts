@@ -111,4 +111,24 @@ describe('Script runner service', () => {
     const result = runScript(script, baseContext(), 'prerequest')
     expect(result.console.join(' ')).toContain('hello world')
   })
+
+  it('runScript — alert calls host callback', () => {
+    const alerts: string[] = []
+    runScript(`alert('hello');`, baseContext(), 'prerequest', {
+      alert: (msg) => alerts.push(msg)
+    })
+    expect(alerts).toEqual(['hello'])
+  })
+
+  it('runScript — pre-request script error is reported', () => {
+    const result = runScript(`throw new Error('boom');`, baseContext(), 'prerequest')
+    expect(result.testResults).toHaveLength(1)
+    expect(result.testResults[0].passed).toBe(false)
+    expect(result.testResults[0].error).toContain('boom')
+  })
+
+  it('runScript — pm.request.url can be changed', () => {
+    const result = runScript(`pm.request.url = 'https://changed.example.com';`, baseContext(), 'prerequest')
+    expect(result.requestChanges.url).toBe('https://changed.example.com')
+  })
 })

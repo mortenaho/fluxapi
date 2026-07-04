@@ -6,6 +6,7 @@ import {
   runJsonPathQuery,
   formatQueryResult,
   detectResponseBody,
+  isHtmlResponse,
   formatEnvValue
 } from '../src/renderer/utils/jsonQuery'
 
@@ -76,6 +77,11 @@ describe('JSON query utilities', () => {
     expect(detectResponseBody('{"ok":true}').label).toBe('JSON')
     expect(detectResponseBody('<html><body>Hi</body></html>', 'text/html').language).toBe('html')
     expect(detectResponseBody('plain text').label).toBe('Text')
+  })
+
+  it('isHtmlResponse — true for HTML content', () => {
+    expect(isHtmlResponse('<html><body>Hi</body></html>', 'text/html')).toBe(true)
+    expect(isHtmlResponse('{"ok":true}')).toBe(false)
   })
 
   it('formatEnvValue — stores plain strings without JSON quotes', () => {

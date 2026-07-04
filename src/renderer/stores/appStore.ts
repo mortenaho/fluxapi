@@ -23,6 +23,7 @@ interface AppState {
   activeSidebar: 'collections' | 'history' | 'openapi' | 'proto'
   response: HttpResponse | null
   testResults: TestResult[]
+  scriptLogs: string[]
   loading: boolean
   wsConnectionId: string | null
   wsMessages: import('@shared/types').WsMessage[]
@@ -55,7 +56,7 @@ interface AppState {
   createRequest: (collectionId?: string | null) => Promise<void>
   deleteRequest: (id: string) => Promise<void>
   setRequestPinned: (id: string, pinned: boolean) => Promise<void>
-  setResponse: (response: HttpResponse | null, testResults?: TestResult[]) => void
+  setResponse: (response: HttpResponse | null, testResults?: TestResult[], scriptLogs?: string[]) => void
   setSnippetOpen: (open: boolean) => void
   setImportDialog: (open: boolean, type?: AppState['importType']) => void
   setCurlPaste: (text: string) => void
@@ -109,6 +110,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeSidebar: 'collections',
   response: null,
   testResults: [],
+  scriptLogs: [],
   loading: false,
   wsConnectionId: null,
   wsMessages: [],
@@ -139,10 +141,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setActiveSidebar: (tab) => set({ activeSidebar: tab }),
 
-  setActiveRequest: (req) => set({ activeRequest: req, response: null, testResults: [] }),
+  setActiveRequest: (req) => set({ activeRequest: req, response: null, testResults: [], scriptLogs: [] }),
 
   selectRequest: async (req) => {
-    set({ response: null, testResults: [] })
+    set({ response: null, testResults: [], scriptLogs: [] })
 
     if (!req) {
       set({ activeRequest: null })
@@ -167,7 +169,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       activeRequest: item.requestSnapshot,
       response: item.responseSnapshot,
-      testResults: []
+      testResults: [],
+      scriptLogs: []
     })
   },
 
@@ -211,7 +214,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const saved = await get().persistActiveRequest()
     if (!saved) return
 
-    set({ loading: true, response: null, testResults: [] })
+    set({ loading: true, response: null, testResults: [], scriptLogs: [] })
 
     try {
       if (saved.protocol === 'websocket') {
@@ -274,6 +277,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         response: result.response,
         testResults: result.testResults,
+        scriptLogs: result.scriptLogs ?? [],
         activeRequest: {
           ...saved,
           lastResponse: result.response,
@@ -332,7 +336,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       activeRequest: { ...emptyRequest(), collectionId, name: 'New Request' },
       response: null,
-      testResults: []
+      testResults: [],
+      scriptLogs: []
     })
 
     const saved = await window.fluxAPI.requests.save({
@@ -342,14 +347,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       url: '',
       protocol: 'http'
     })
-    set({ activeRequest: saved, response: null, testResults: [] })
+    set({ activeRequest: saved, response: null, testResults: [], scriptLogs: [] })
     await get().loadRequests()
   },
 
   deleteRequest: async (id) => {
     await window.fluxAPI.requests.delete(id)
     if (get().activeRequest?.id === id) {
-      set({ activeRequest: emptyRequest(), response: null, testResults: [] })
+      set({ activeRequest: emptyRequest(), response: null, testResults: [], scriptLogs: [] })
     }
     await get().loadRequests()
   },
@@ -361,7 +366,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().loadRequests()
   },
 
-  setResponse: (response, testResults = []) => set({ response, testResults }),
+  setResponse: (response, testResults = [], scriptLogs = []) =>
+    set({ response, testResults, scriptLogs }),
   setSnippetOpen: (open) => set({ snippetOpen: open }),
   setImportDialog: (open, type = null) => set({ importDialogOpen: open, importType: type }),
   setCurlPaste: (text) => set({ curlPaste: text }),
