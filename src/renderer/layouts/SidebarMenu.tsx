@@ -14,19 +14,21 @@ import HistoryIcon from '@mui/icons-material/History'
 import PublicIcon from '@mui/icons-material/Public'
 import ApiIcon from '@mui/icons-material/Api'
 import DescriptionIcon from '@mui/icons-material/Description'
+import ExtensionIcon from '@mui/icons-material/Extension'
 import ImportExportIcon from '@mui/icons-material/ImportExport'
 import CodeIcon from '@mui/icons-material/Code'
 import CookiesIcon from '@mui/icons-material/Cookie'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import CheckIcon from '@mui/icons-material/Check'
 
-export type SidebarPanel = 'collections' | 'history' | 'openapi' | 'proto'
+export type SidebarPanel = 'collections' | 'history' | 'openapi' | 'proto' | 'plugins'
 
 const PANEL_ITEMS: { id: SidebarPanel; label: string; icon: React.ReactNode }[] = [
   { id: 'collections', label: 'Collections', icon: <FolderIcon fontSize="small" /> },
   { id: 'history', label: 'History', icon: <HistoryIcon fontSize="small" /> },
   { id: 'openapi', label: 'Swagger / OpenAPI', icon: <DescriptionIcon fontSize="small" /> },
-  { id: 'proto', label: 'Proto Files', icon: <ApiIcon fontSize="small" /> }
+  { id: 'proto', label: 'Proto Files', icon: <ApiIcon fontSize="small" /> },
+  { id: 'plugins', label: 'Plugins', icon: <ExtensionIcon fontSize="small" /> }
 ]
 
 const menuHeaderSx = {

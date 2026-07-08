@@ -3,6 +3,7 @@ import FolderIcon from '@mui/icons-material/Folder'
 import HistoryIcon from '@mui/icons-material/History'
 import DescriptionIcon from '@mui/icons-material/Description'
 import ApiIcon from '@mui/icons-material/Api'
+import ExtensionIcon from '@mui/icons-material/Extension'
 import ImportExportIcon from '@mui/icons-material/ImportExport'
 import CodeIcon from '@mui/icons-material/Code'
 import CookiesIcon from '@mui/icons-material/Cookie'
@@ -13,7 +14,8 @@ const NAV_ITEMS: { id: SidebarPanel; label: string; icon: typeof FolderIcon }[] 
   { id: 'collections', label: 'Collections', icon: FolderIcon },
   { id: 'history', label: 'History', icon: HistoryIcon },
   { id: 'openapi', label: 'OpenAPI', icon: DescriptionIcon },
-  { id: 'proto', label: 'Proto Files', icon: ApiIcon }
+  { id: 'proto', label: 'Proto Files', icon: ApiIcon },
+  { id: 'plugins', label: 'Plugins', icon: ExtensionIcon }
 ]
 
 interface Props {

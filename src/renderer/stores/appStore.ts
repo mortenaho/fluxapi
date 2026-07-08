@@ -32,7 +32,7 @@ interface AppState {
   requestTabs: RequestTab[]
   activeTabId: string | null
   activeRequest: RequestModel | null
-  activeSidebar: 'collections' | 'history' | 'openapi' | 'proto'
+  activeSidebar: 'collections' | 'history' | 'openapi' | 'proto' | 'plugins'
   response: HttpResponse | null
   testResults: TestResult[]
   scriptLogs: string[]

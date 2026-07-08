@@ -5,7 +5,8 @@ const TITLES: Record<SidebarPanel, string> = {
   collections: 'Collections',
   history: 'History',
   openapi: 'Swagger / OpenAPI',
-  proto: 'Proto Files'
+  proto: 'Proto Files',
+  plugins: 'Plugins'
 }
 
 export default function SidebarPanelHeader({

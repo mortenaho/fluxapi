@@ -15,6 +15,7 @@ import CollectionsPanel from '../features/collections/CollectionsPanel'
 import HistoryPanel from '../features/history/HistoryPanel'
 import OpenApiPanel from '../features/import/OpenApiPanel'
 import ProtoPanel from '../features/grpc/ProtoPanel'
+import PluginsPanel from '../features/plugins/PluginsPanel'
 import EnvironmentsDialog from '../features/environments/EnvironmentsDialog'
 import RequestBuilder from '../features/request/RequestBuilder'
 import ResponsePanel from '../features/response/ResponsePanel'
@@ -207,12 +208,14 @@ export default function MainLayout() {
           {activeSidebar === 'history' && <SidebarPanelHeader panel="history" />}
           {activeSidebar === 'openapi' && <SidebarPanelHeader panel="openapi" />}
           {activeSidebar === 'proto' && <SidebarPanelHeader panel="proto" />}
+          {activeSidebar === 'plugins' && <SidebarPanelHeader panel="plugins" />}
 
           <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, px: activeSidebar === 'collections' ? 0 : 1, py: activeSidebar === 'collections' ? 0 : 1 }} data-resize-panel>
             {activeSidebar === 'collections' && <CollectionsPanel />}
             {activeSidebar === 'history' && <HistoryPanel />}
             {activeSidebar === 'openapi' && <OpenApiPanel />}
             {activeSidebar === 'proto' && <ProtoPanel />}
+            {activeSidebar === 'plugins' && <PluginsPanel />}
           </Box>
         </Box>
 
