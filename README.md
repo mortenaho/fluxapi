@@ -1,36 +1,30 @@
 # Lisek
 
-Offline desktop API client for **HTTP**, **GraphQL**, **WebSocket**, and **gRPC**. Built with Electron, React, MUI, and SQLite — no cloud account required.
+Offline desktop API client for **HTTP**, **GraphQL**, **WebSocket**, **SSE**, and **gRPC**. Built with Electron, React, MUI, and SQLite — no cloud account required.
 
-**Website:** [mortenaho.github.io/Lisek](https://mortenaho.github.io/Lisek) (GitHub Pages)
+**Website:** [mortenaho.github.io/Lisek](https://mortenaho.github.io/Lisek)
 
 **Download (Windows):** [Lisek-Setup.exe](https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe)
 
+![Lisek tour](docs/screenshots/lisek-tour.gif)
+
 ## Screenshots
 
-### GET — JSONPlaceholder posts
+| Collections | HTTP / REST |
+|-------------|-------------|
+| ![Collections](docs/screenshots/01-collections.png) | ![HTTP](docs/screenshots/02-http-rest.png) |
 
-![GET request with JSON response](docs/screenshots/get-request.png)
+| GraphQL | WebSocket |
+|---------|-----------|
+| ![GraphQL](docs/screenshots/03-graphql.png) | ![WebSocket](docs/screenshots/04-websocket.png) |
 
-### DELETE — with query parameters
+| gRPC | Environments |
+|------|--------------|
+| ![gRPC](docs/screenshots/05-grpc.png) | ![Environments](docs/screenshots/06-environments.png) |
 
-![DELETE request with query parameters](docs/screenshots/delete-request.png)
-
-### DELETE — empty JSON response
-
-![DELETE request with 200 OK response](docs/screenshots/delete-response.png)
-
-### Environments — manage variables
-
-![Environments dialog with active environment and {{variable}} substitution](docs/screenshots/environments.png)
-
-### History — recent requests
-
-![Request history with status codes and timing](docs/screenshots/history.png)
-
-### Collections — sidebar and variables
-
-![Collections sidebar and variable URL input](docs/screenshots/collections.png)
+| Scripts | History |
+|---------|---------|
+| ![Scripts](docs/screenshots/07-scripts.png) | ![History](docs/screenshots/08-history.png) |
 
 ---
 
@@ -40,132 +34,107 @@ Offline desktop API client for **HTTP**, **GraphQL**, **WebSocket**, and **gRPC*
 
 - All standard methods: **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**
 - **Query params**, **headers**, and **body** editors with per-row enable/disable
-- Body modes:
-  - **None**
-  - **Raw** (JSON, XML, plain text, etc.) with content-type selector and one-click JSON formatting
-  - **form-data** with **file upload** support
-  - **x-www-form-urlencoded**
-- **Cancel** an in-flight request
-- **Auto-save** the active request when you click Send
-- **Keyboard shortcut:** `Ctrl+Enter` to send
-- Configurable **SSL certificate verification**, **follow redirects**, and **request timeout**
-- Automatic **cookie jar** — cookies from responses are stored and sent on matching domains
+- Body modes: **none**, **raw** (JSON/XML/text), **form-data** (with file upload), **x-www-form-urlencoded**
+- **Cancel** in-flight requests · **auto-save** on Send · `Ctrl+Enter` to send
+- **SSL verification**, **follow redirects**, **proxy**, and **timeout** settings
+- Automatic **cookie jar** with domain management UI
+- **Tags** and **notes** per request for organization
 
 ### Authentication
 
-- **No Auth**
-- **Bearer Token**
-- **Basic Auth** (username / password)
-- **API Key** (header or query parameter)
-- **OAuth 2.0**
-  - Client Credentials grant
-  - Password grant
-  - Auto token fetch from token URL, or paste an access token manually
+- **Bearer**, **Basic**, **API Key** (header or query), **OAuth 2.0** (client credentials & password grants)
 
 ### Variables
 
-- **Environment variables** — multiple environments, one active at a time
-- **Collection variables** — scoped to a collection and its sub-folders
-- `{{variable}}` substitution in URL, params, headers, body, and auth fields
-- Autocomplete picker for environment and collection variables in the URL bar
-- Scripts can read/write environment and collection variables; changes are persisted
+- **Environment** and **collection** variables with `{{variable}}` substitution
+- Autocomplete in URL and body fields
+- Script API: `pm.environment.*`, `pm.collectionVariables.*`
 
-### Collections & Requests
+### Collections & Runner
 
-- Organize requests in **nested folders**
-- Create, rename, duplicate, delete collections and requests
-- **Pin** collections and requests to the top
-- Search/filter in the collections sidebar
-- **Collection variables** editor (per collection)
-- **Export** a collection as **Postman Collection v2.1** or **OpenAPI 3**
-- **Collection Runner** — run all HTTP/GraphQL requests in a folder sequentially
-  - Executes pre-request and test scripts
-  - Runs test assertions
-  - Optional **stop on first failure**
-  - Pass/fail summary with status codes and duration
+- Nested folders, pinning, search, collection variables
+- **Collection Runner** with CSV/JSON data files, pre-request/test scripts, stop-on-failure
+- **Scheduled requests** — run a saved request on a cron-like interval with desktop notifications
+- **Git folder sync** — link a collection to a folder, push/pull JSON, optional file watcher
+- Export: **Postman**, **OpenAPI 3**, **Bruno**
+- Import: **Postman**, **OpenAPI/Swagger**, **Insomnia**, **Bruno**, **HAR**, **cURL**
 
 ### Response Viewer
 
-- **Body** tab with Monaco editor — syntax highlighting for JSON, XML, HTML, and more
-- Pretty-printed JSON; toggle **word wrap**
-- **Copy body**, **copy full response**, **download response** (JSON or plain text)
-- **Headers** and **Cookies** tabs
-- **Tests** tab when test scripts ran (pass/fail per assertion)
-- **JSONPath query** on JSON responses — e.g. `$.data.items[0].name`, `$..id`
-- Status code chip, response time, and size in the toolbar
+- Monaco editor with syntax highlighting, JSONPath query, word wrap
+- **Image / PDF preview** for binary responses
+- **Response diff** against saved snapshots
+- Copy, download (text or binary), headers, cookies, tests, script console
+
+### OpenAPI / Swagger
+
+- Import from file or URL, browse paths, generate requests
+- **Create environment** from spec (base URL + common variables)
+
+### GraphQL
+
+- Query/variables editors, schema introspection, field insertion
+- **GraphQL subscriptions** over WebSocket
+
+### WebSocket & SSE
+
+- WebSocket client with live message log
+- **Server-Sent Events (SSE)** connection panel
+
+### gRPC
+
+- Import `.proto` from disk or **URL**, service/method picker
+- Unary and streaming call types, metadata, JSON payload
+- **gRPC server reflection** browser
+
+### Local Mock Server
+
+Built-in HTTP stub server for local development:
+
+- Add routes with method, path, status code, and response body
+- Response types: **JSON** (auto-beautify), **text**, or **file** (PDF, images, etc.)
+- Edit, delete, and copy route URLs from the UI
+- **Live indicator** on the icon rail when the server is running
+- Serves files with correct `Content-Type`; open in browser or force download
+
+### Plugins
+
+Sidebar tools for everyday API work (no request required):
+
+| Plugin | Purpose |
+|--------|---------|
+| Base64 | Encode / decode |
+| URL Encode | Encode / decode URL strings |
+| Hash | SHA-256, SHA-384, SHA-512 |
+| JWT Decode | Inspect header & payload |
+| Crypto | AES-GCM / AES-CBC encrypt & decrypt |
+
+### Scripts
+
+Postman-compatible **`pm.*`** sandbox: environment/collection vars, `pm.test`, `pm.expect`, `console.log`.
+
+### History
+
+- Timeline chart of recent request durations
+- Reopen any past request/response snapshot
 
 ### Import & Export
 
 | Format | Import | Export |
 |--------|--------|--------|
-| Postman Collection v2.1 (JSON) | ✓ | ✓ |
-| OpenAPI 3 / Swagger 2 (JSON, YAML) | ✓ | ✓ |
-| cURL command | ✓ (paste) | ✓ (code snippet dialog) |
-
-### OpenAPI / Swagger Browser
-
-- Import and browse imported specs in the sidebar
-- Expand a spec to see all **paths and methods**
-- **Generate a request** from any operation with one click
-
-### GraphQL
-
-- Dedicated GraphQL protocol mode
-- Query and variables editors
-- **Schema introspection** — browse types and fields
-- Click a field to insert it into the query
-
-### WebSocket
-
-- Connect to `ws://` or `wss://` endpoints
-- Custom headers on connect
-- Send messages and view a live **sent/received** log
-- Connect / disconnect controls
-
-### gRPC
-
-- Import **`.proto`** files (stored locally, reusable across requests)
-- Pick **service** and **method** from the loaded proto
-- Call types: **unary**, **server streaming**, **client streaming**, **bidirectional streaming**
-- Metadata headers and JSON message payload
-- Target host (e.g. `localhost:50051`)
-
-### Pre-request & Test Scripts
-
-Postman-compatible **`pm.*`** API in a sandboxed VM:
-
-| API | Description |
-|-----|-------------|
-| `pm.environment.set/get/unset` | Read/write active environment variables |
-| `pm.collectionVariables.set/get/unset` | Read/write collection variables |
-| `pm.variables.set/get` | Alias for environment variables |
-| `pm.request` | Current request method, URL, headers, body |
-| `pm.response` | Status, headers, `text()`, `json()` (test phase only) |
-| `pm.test(name, fn)` | Define a test assertion |
-| `pm.expect(actual).to.equal/eql/be.ok` | Chai-style assertions |
-| `console.log` | Captured script output |
-
-Pre-request scripts can modify the outgoing request. Test scripts run after the response and produce pass/fail results shown in the response panel.
-
-### History
-
-- Automatic log of sent requests with status code and duration
-- Click any entry to reopen the request/response snapshot
-- Clear all history
-
-### Cookie Jar UI
-
-- View all stored cookies grouped by **domain**
-- Delete cookies for a single domain
-- **Clear all** cookies
+| Postman Collection v2.1 | ✓ | ✓ |
+| OpenAPI 3 / Swagger 2 | ✓ | ✓ |
+| Insomnia | ✓ | — |
+| Bruno | ✓ | ✓ |
+| HAR | ✓ | ✓ |
+| cURL | ✓ (paste) | ✓ (snippet dialog) |
+| Workspace backup (JSON) | ✓ | ✓ |
 
 ### Settings & UI
 
-- **Light / Dark** theme (toolbar toggle or Settings)
-- **Resizable** sidebar width and response panel height (persisted)
-- Sidebar panels: Collections, History, Swagger/OpenAPI, Proto Files
-- Toolbar: Environments, Import, cURL snippet, Cookie jar, Theme, About, Settings
-- Fully **offline** — bundled Roboto fonts and MUI icons (no CDN)
+- Light / dark theme, resizable sidebar and response panel
+- Icon rail: Collections, History, OpenAPI, Proto, Plugins, Import, cURL, Cookies, **Mock Server**
+- Command palette, keyboard shortcuts, fully offline (bundled fonts & icons)
 
 ---
 
@@ -173,11 +142,11 @@ Pre-request scripts can modify the outgoing request. Test scripts run after the 
 
 | Layer | Technology |
 |-------|------------|
-| Desktop shell | Electron 34 |
+| Desktop | Electron 34 |
 | UI | React 19, MUI 6, Monaco Editor |
 | Build | electron-vite, electron-builder |
-| Storage | SQLite via sql.js (pure JS, no native DB build) |
-| HTTP | undici (Node fetch) |
+| Storage | SQLite via sql.js |
+| HTTP | undici |
 | gRPC | @grpc/grpc-js, @grpc/proto-loader |
 
 ---
@@ -189,12 +158,11 @@ npm install
 npm run dev
 ```
 
-Other scripts:
-
 ```bash
 npm run build      # production build
 npm run typecheck  # TypeScript check
 npm test           # Vitest unit tests
+npm run screenshots  # regenerate docs screenshots
 npm run icons      # regenerate app icons
 ```
 
@@ -202,66 +170,49 @@ npm run icons      # regenerate app icons
 
 ## Build Windows Installer
 
-Close any running Lisek/Electron instance first, then:
+Close any running Lisek instance, then:
 
 ```bash
 npm run dist
 ```
 
-Output: `dist-installer/Lisek Setup 1.1.0.exe`
-
-The build writes to a temp directory and copies the installer into `dist-installer/` via `scripts/post-dist.mjs`.
+Output is copied to `dist-installer/` (see `scripts/post-dist.mjs`).
 
 ---
 
 ## GitHub Pages
 
-Static HTML site in [`docs/`](docs/index.html) — no build step.
+Static site in [`docs/`](docs/index.html) — deployed via [`.github/workflows/pages.yml`](.github/workflows/pages.yml).
 
-Site URL: **https://mortenaho.github.io/Lisek/**
-
-### Enable (one time)
-
-GitHub Pages deploys from [`docs/`](docs/index.html) via **GitHub Actions** (workflow: [`.github/workflows/pages.yml`](.github/workflows/pages.yml)).
-
-1. Open **[Settings → Pages](https://github.com/mortenaho/Lisek/settings/pages)**
-2. **Build and deployment → Source:** `GitHub Actions`
-3. Push to `main` (or run **Actions → Deploy GitHub Pages → Run workflow**)
-
-The site is live after ~1 minute at **https://mortenaho.github.io/Lisek/**
-
-Or from PowerShell (after `gh auth login`):
-
-```powershell
-.\scripts\enable-github-pages.ps1
-```
-
-If you see *“Deployment failed, try again later”* with **Deploy from a branch**, switch the source to **GitHub Actions** (step 2 above) instead of `main /docs`.
+Live at **https://mortenaho.github.io/Lisek/**
 
 ---
 
 ## Releases
 
-Windows installers are built automatically when you push a version tag:
+Push a version tag to trigger the Windows build workflow:
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.6.0
+git push origin v1.6.0
 ```
 
-The [Release](.github/workflows/release.yml) workflow runs `npm run dist` on Windows and uploads `Lisek Setup *.exe` to GitHub Releases.
+Or run **Actions → Release → Run workflow** with the tag name.
 
 ---
 
 ## Data Storage
 
-All data is stored locally in a SQLite database:
+Local SQLite database and assets:
 
 ```
-%APPDATA%/Lisek/lisek.db
+%APPDATA%/Lisek/
+  lisek.db          # collections, requests, environments, history, …
+  cookies.json      # cookie jar
+  mock-routes.json  # mock server routes
+  mock-assets/      # files staged for mock responses
+  protos/           # imported .proto files
 ```
-
-Stored data includes collections, requests, environments, history, imported proto files, OpenAPI specs, settings, and the cookie jar.
 
 ---
 
@@ -269,15 +220,13 @@ Stored data includes collections, requests, environments, history, imported prot
 
 ```
 src/
-  main/           Electron main process, IPC handlers, services, SQLite
-  preload/        Secure IPC bridge (contextBridge)
+  main/           Electron main process, IPC, services, SQLite
+  preload/        Secure IPC bridge
   renderer/       React + MUI UI
-    features/     Collections, request builder, response, import, settings, …
-    components/   Shared UI (editors, dialogs, resize handles)
+    features/     collections, request, response, mock server, plugins, …
     stores/       Zustand app state
-shared/           Shared TypeScript types and app metadata
-resources/        Icons and logo assets
-scripts/          Build helpers (icons, dist, electron branding)
+shared/           Shared TypeScript types
+docs/             GitHub Pages site & screenshots
 tests/            Vitest unit tests
 ```
 

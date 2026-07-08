@@ -1,6 +1,6 @@
 {
   "name": "lisek",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Offline API client for HTTP, GraphQL, WebSocket, and gRPC",
   "main": "./out/main/index.js",
   "author": "Seyed Morteza Hosseini <mortenaho@gmail.com> (https://mortenaho.ir)",

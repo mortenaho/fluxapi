@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lisek — Offline API Client for HTTP, GraphQL, WebSocket &amp; gRPC</title>
-  <meta name="description" content="Lisek is a free, offline desktop API client for HTTP, GraphQL, WebSocket, and gRPC. No cloud account required. Built with Electron and React.">
+  <meta name="description" content="Lisek is a free, offline desktop API client for HTTP, GraphQL, WebSocket, SSE, and gRPC. Mock server, plugins, collections, scripts — no cloud account required.">
   <meta name="theme-color" content="#0b0f17">
   <meta property="og:title" content="Lisek — Offline API Client">
-  <meta property="og:description" content="Test HTTP, GraphQL, WebSocket, and gRPC APIs locally. Collections, environments, scripts, and more.">
+  <meta property="og:description" content="Test HTTP, GraphQL, WebSocket, gRPC, and SSE locally. Mock server, Bruno/HAR import, scheduled runs, and developer plugins.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/logo.png">
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="style.css">
-  <!-- Direct download: https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe -->
 </head>
 <body>
   <header class="site-header">
@@ -23,6 +22,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
         <li><a href="#download">Download</a></li>
         <li><a href="https://github.com/mortenaho/Lisek">GitHub</a></li>
       </ul>
@@ -35,14 +35,14 @@
         <img class="hero-logo" src="assets/logo.png" alt="Lisek logo">
         <h1>Test APIs <span>offline</span>, without the cloud</h1>
         <p>
-          Lisek is a desktop API client for HTTP, GraphQL, WebSocket, and gRPC.
-          Organize collections, manage environments, run scripts, and keep everything on your machine.
+          Lisek is a desktop API client for HTTP, GraphQL, WebSocket, SSE, and gRPC.
+          Run collections, mock local endpoints, decode JWTs, and keep everything on your machine.
         </p>
         <div class="badges">
           <span class="badge">Windows</span>
           <span class="badge">Offline-first</span>
           <span class="badge">MIT License</span>
-          <span class="badge">v1.2.4</span>
+          <span class="badge">v1.6.0</span>
         </div>
         <div class="actions">
           <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Download for Windows</a>
@@ -53,7 +53,7 @@
             <img
               class="hero-preview-gif"
               src="screenshots/lisek-tour.gif"
-              alt=""
+              alt="Lisek application tour"
               width="960"
               height="617"
               loading="eager"
@@ -71,29 +71,94 @@
         <div class="feature-grid">
           <article class="feature-card">
             <h3>HTTP &amp; REST</h3>
-            <p>All methods, params, headers, form-data, file uploads, auth, cookies, and cURL import/export.</p>
+            <p>All methods, auth, cookies, form-data, JSONPath, binary preview, response diff, and cURL import/export.</p>
           </article>
           <article class="feature-card">
             <h3>GraphQL</h3>
-            <p>Query editor, variables, and schema introspection with one-click field insertion.</p>
+            <p>Query editor, variables, introspection, and WebSocket subscriptions.</p>
           </article>
           <article class="feature-card">
-            <h3>WebSocket</h3>
-            <p>Connect to ws/wss endpoints, send messages, and inspect a live traffic log.</p>
+            <h3>WebSocket &amp; SSE</h3>
+            <p>Live WebSocket log and Server-Sent Events panel for streaming APIs.</p>
           </article>
           <article class="feature-card">
             <h3>gRPC</h3>
-            <p>Import .proto files, pick services and methods, and call unary or streaming RPCs.</p>
+            <p>Import .proto from disk or URL, reflection browser, unary and streaming RPCs.</p>
           </article>
           <article class="feature-card">
             <h3>Collections &amp; Runner</h3>
-            <p>Nested folders, pinning, Postman/OpenAPI export, and sequential collection runs.</p>
+            <p>Nested folders, CSV/JSON data-driven runs, scheduled requests, and Git folder sync.</p>
           </article>
           <article class="feature-card">
-            <h3>Scripts &amp; Variables</h3>
-            <p>Postman-compatible pm.* scripts, environments, collection variables, and JSONPath queries.</p>
+            <h3>Mock Server</h3>
+            <p>Local HTTP stub with JSON, text, or file responses. Edit routes and test in the browser.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Import / Export</h3>
+            <p>Postman, OpenAPI, Insomnia, Bruno, HAR, and workspace backup — all local.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Plugins</h3>
+            <p>Base64, URL encode, SHA hashes, JWT decode, and AES crypto tools in the sidebar.</p>
           </article>
         </div>
+      </div>
+    </section>
+
+    <section id="screenshots" class="screenshots-section">
+      <div class="container">
+        <h2 class="section-title">Screenshots</h2>
+        <p class="section-lead">Collections, protocols, environments, scripts, and history — in one compact UI.</p>
+        <div class="screenshot-grid">
+          <figure class="screenshot-card">
+            <img src="screenshots/01-collections.png" alt="Collections sidebar" loading="lazy" width="640" height="400">
+            <figcaption>Collections</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/02-http-rest.png" alt="HTTP request and response" loading="lazy" width="640" height="400">
+            <figcaption>HTTP / REST</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/03-graphql.png" alt="GraphQL query" loading="lazy" width="640" height="400">
+            <figcaption>GraphQL</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/04-websocket.png" alt="WebSocket panel" loading="lazy" width="640" height="400">
+            <figcaption>WebSocket</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/05-grpc.png" alt="gRPC request" loading="lazy" width="640" height="400">
+            <figcaption>gRPC</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/06-environments.png" alt="Environments dialog" loading="lazy" width="640" height="400">
+            <figcaption>Environments</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/07-scripts.png" alt="Pre-request and test scripts" loading="lazy" width="640" height="400">
+            <figcaption>Scripts</figcaption>
+          </figure>
+          <figure class="screenshot-card">
+            <img src="screenshots/08-history.png" alt="Request history" loading="lazy" width="640" height="400">
+            <figcaption>History</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="whats-new" class="features-section">
+      <div class="container">
+        <h2 class="section-title">What&rsquo;s new in v1.6</h2>
+        <ul class="changelog-list">
+          <li><strong>Mock Server</strong> — local HTTP stubs with JSON, text, and file responses; route editor and live status indicator</li>
+          <li><strong>Plugins</strong> — Base64, URL encode, hashes, JWT decode, AES crypto</li>
+          <li><strong>Bruno &amp; HAR</strong> — import and export collections; HAR capture import</li>
+          <li><strong>Scheduled requests</strong> — run saved requests on an interval</li>
+          <li><strong>Git folder sync</strong> — link collections to a directory</li>
+          <li><strong>SSE &amp; GraphQL subscriptions</strong> — streaming protocol support</li>
+          <li><strong>Binary preview</strong> — image and PDF responses; binary download</li>
+          <li><strong>Data-driven runner</strong> — CSV/JSON iteration in collection runs</li>
+        </ul>
       </div>
     </section>
 
@@ -102,17 +167,17 @@
         <h2 class="section-title">Download</h2>
         <div class="download-box">
           <p>
-            Lisek runs on Windows 10/11 (x64). Click below to download the installer directly (~88 MB).
+            Lisek runs on Windows 10/11 (x64). Click below to download the installer.
           </p>
           <div class="actions">
             <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Lisek-Setup.exe</a>
             <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest">All releases</a>
-            <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek#build-windows-installer">Build from source</a>
+            <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek#development">Build from source</a>
           </div>
           <p class="install-note">
-            If Windows shows <strong>“Windows protected your PC”</strong>, click
+            If Windows shows <strong>&ldquo;Windows protected your PC&rdquo;</strong>, click
             <strong>More info</strong>, then <strong>Run anyway</strong>.
-            Lisek is open source and not code-signed yet — this warning is normal for unsigned installers.
+            Lisek is open source and not code-signed yet.
           </p>
           <p class="download-url">
             Direct link:
@@ -141,7 +206,7 @@
 
   <footer class="site-footer">
     <div class="container footer-row">
-      <span>MIT License · Lisek</span>
+      <span>MIT License · Lisek v1.6.0</span>
       <span>
         Built by
         <a href="https://mortenaho.ir">Seyed Morteza Hosseini</a>
