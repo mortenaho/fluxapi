@@ -6,7 +6,7 @@ import { registerIpcHandlers } from './ipc'
 import { seedFreshInstall, seedScreenshotDemo } from './services/repository'
 import { configureCookieJar } from './services/cookie-jar.service'
 import { initScheduledJobs } from './services/schedule.service'
-import { shutdownMockServer } from './services/mock-server.service'
+import { shutdownMockServer, reconcileMockServerOnStartup } from './services/mock-server.service'
 import { APP_INFO } from '../../shared/appInfo'
 
 let mainWindow: BrowserWindow | null = null
@@ -143,6 +143,7 @@ app.whenReady().then(async () => {
     seedFreshInstall()
   }
   registerIpcHandlers(() => mainWindow)
+  await reconcileMockServerOnStartup()
   initScheduledJobs()
   createWindow()
 

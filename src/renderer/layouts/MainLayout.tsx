@@ -63,12 +63,21 @@ export default function MainLayout() {
   const [envDialogOpen, setEnvDialogOpen] = useState(false)
   const [cookiesOpen, setCookiesOpen] = useState(false)
   const [mockOpen, setMockOpen] = useState(false)
+  const mockServerRunning = useAppStore((s) => s.mockServerRunning)
+  const mockServerPort = useAppStore((s) => s.mockServerPort)
+  const refreshMockServerState = useAppStore((s) => s.refreshMockServerState)
   const [sidebarWidth, setSidebarWidth] = useState(() =>
     clamp(readStoredSize(STORAGE_SIDEBAR, SIDEBAR_DEFAULT), SIDEBAR_MIN, SIDEBAR_MAX)
   )
   const [responseWidth, setResponseWidth] = useState(() =>
     clamp(readStoredSize(STORAGE_RESPONSE, RESPONSE_DEFAULT), RESPONSE_MIN, RESPONSE_MAX)
   )
+
+  useEffect(() => {
+    void refreshMockServerState()
+    const timer = window.setInterval(() => void refreshMockServerState(), 3000)
+    return () => window.clearInterval(timer)
+  }, [refreshMockServerState])
 
   const sidebarWrapRef = useRef<HTMLDivElement>(null)
   const responseWrapRef = useRef<HTMLDivElement>(null)
@@ -188,6 +197,8 @@ export default function MainLayout() {
           onSnippet={() => setSnippetOpen(true)}
           onCookies={() => setCookiesOpen(true)}
           onMock={() => setMockOpen(true)}
+          mockRunning={mockServerRunning}
+          mockPort={mockServerPort}
         />
 
         <Box

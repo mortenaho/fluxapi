@@ -37,6 +37,7 @@ import {
 import {
   addMockRoute,
   clearMockRoutes,
+  updateMockRoute,
   ensureMockRoute,
   getMockServerState,
   removeMockRoute,
@@ -215,13 +216,15 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
     if (seedRoute) {
       ensureMockRoute(seedRoute)
     }
+    const verifyPath = seedRoute?.path
     if (forceRestart) {
-      return restartMockServer(port)
+      return restartMockServer(port, verifyPath)
     }
     return startMockServer(port)
   })
   ipcMain.handle('mock:stop', () => stopMockServer())
   ipcMain.handle('mock:addRoute', (_, route) => addMockRoute(route))
+  ipcMain.handle('mock:updateRoute', (_, id, route) => updateMockRoute(id, route))
   ipcMain.handle('mock:removeRoute', (_, id) => removeMockRoute(id))
   ipcMain.handle('mock:clearRoutes', () => clearMockRoutes())
 

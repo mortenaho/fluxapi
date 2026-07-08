@@ -50,6 +50,8 @@ interface AppState {
   searchQuery: string
   commandPaletteOpen: boolean
   shortcutsOpen: boolean
+  mockServerRunning: boolean
+  mockServerPort: number
 
   loadInitial: () => Promise<void>
   setThemeMode: (mode: 'light' | 'dark') => void
@@ -83,6 +85,7 @@ interface AppState {
   setImportDialog: (open: boolean, type?: AppState['importType']) => void
   setCurlPaste: (text: string) => void
   setSearchQuery: (q: string) => void
+  refreshMockServerState: () => Promise<void>
 }
 
 const emptyRequest = (): RequestModel => ({
@@ -166,6 +169,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   searchQuery: '',
   commandPaletteOpen: false,
   shortcutsOpen: false,
+  mockServerRunning: false,
+  mockServerPort: 0,
 
   loadInitial: async () => {
     const settings = await window.lisek.settings.get()
@@ -176,7 +181,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().loadEnvironments(),
       get().loadHistory(),
       get().loadOpenApiSpecs(),
-      get().loadProtoFiles()
+      get().loadProtoFiles(),
+      get().refreshMockServerState()
     ])
   },
 
@@ -593,5 +599,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSnippetOpen: (open) => set({ snippetOpen: open }),
   setImportDialog: (open, type = null) => set({ importDialogOpen: open, importType: type }),
   setCurlPaste: (text) => set({ curlPaste: text }),
-  setSearchQuery: (q) => set({ searchQuery: q })
+  setSearchQuery: (q) => set({ searchQuery: q }),
+
+  refreshMockServerState: async () => {
+    try {
+      const state = await window.lisek.mock.getState()
+      set({ mockServerRunning: state.running, mockServerPort: state.port })
+    } catch {
+      set({ mockServerRunning: false, mockServerPort: 0 })
+    }
+  }
 }))

@@ -115,6 +115,7 @@ const lisek: LisekAPI = {
     start: (port, seedRoute, forceRestart) => ipcRenderer.invoke('mock:start', port, seedRoute, forceRestart),
     stop: () => ipcRenderer.invoke('mock:stop'),
     addRoute: (route) => ipcRenderer.invoke('mock:addRoute', route),
+    updateRoute: (id, route) => ipcRenderer.invoke('mock:updateRoute', id, route),
     removeRoute: (id) => ipcRenderer.invoke('mock:removeRoute', id),
     clearRoutes: () => ipcRenderer.invoke('mock:clearRoutes')
   },

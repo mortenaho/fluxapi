@@ -1,4 +1,4 @@
-import { Box, Divider, IconButton, Tooltip } from '@mui/material'
+import { Box, Badge, Divider, IconButton, Tooltip } from '@mui/material'
 import FolderIcon from '@mui/icons-material/Folder'
 import HistoryIcon from '@mui/icons-material/History'
 import DescriptionIcon from '@mui/icons-material/Description'
@@ -25,18 +25,22 @@ interface Props {
   onSnippet: () => void
   onCookies: () => void
   onMock: () => void
+  mockRunning?: boolean
+  mockPort?: number
 }
 
 function RailButton({
   active,
   label,
   icon: Icon,
-  onClick
+  onClick,
+  live
 }: {
   active: boolean
   label: string
   icon: typeof FolderIcon
   onClick: () => void
+  live?: boolean
 }) {
   return (
     <Tooltip title={label} placement="right">
@@ -56,7 +60,39 @@ function RailButton({
           }
         }}
       >
-        <Icon sx={{ fontSize: 20 }} />
+        <Badge
+          overlap="circular"
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          badgeContent={
+            live ? (
+              <Box
+                sx={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
+                  bgcolor: 'success.main',
+                  border: '2px solid',
+                  borderColor: 'background.paper',
+                  animation: 'mockRailPulse 1.2s ease-in-out infinite',
+                  '@keyframes mockRailPulse': {
+                    '0%, 100%': { opacity: 1, boxShadow: '0 0 0 0 rgba(46, 125, 50, 0.45)' },
+                    '50%': { opacity: 0.45, boxShadow: '0 0 0 4px rgba(46, 125, 50, 0)' }
+                  }
+                }}
+              />
+            ) : null
+          }
+          sx={{
+            '& .MuiBadge-badge': {
+              minWidth: 9,
+              height: 9,
+              p: 0,
+              transform: 'scale(1) translate(25%, 25%)'
+            }
+          }}
+        >
+          <Icon sx={{ fontSize: 20 }} />
+        </Badge>
       </IconButton>
     </Tooltip>
   )
@@ -68,8 +104,14 @@ export default function IconRail({
   onImport,
   onSnippet,
   onCookies,
-  onMock
+  onMock,
+  mockRunning = false,
+  mockPort = 0
 }: Props) {
+  const mockLabel = mockRunning
+    ? `Mock Server · Running on :${mockPort || 4010}`
+    : 'Mock Server'
+
   return (
     <Box
       sx={{
@@ -102,7 +144,7 @@ export default function IconRail({
       <RailButton active={false} label="Import" icon={ImportExportIcon} onClick={onImport} />
       <RailButton active={false} label="cURL Snippet" icon={CodeIcon} onClick={onSnippet} />
       <RailButton active={false} label="Cookie Jar" icon={CookiesIcon} onClick={onCookies} />
-      <RailButton active={false} label="Mock Server" icon={DnsIcon} onClick={onMock} />
+      <RailButton active={false} label={mockLabel} icon={DnsIcon} onClick={onMock} live={mockRunning} />
     </Box>
   )
 }

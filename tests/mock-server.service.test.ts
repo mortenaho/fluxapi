@@ -6,7 +6,8 @@ import {
   normalizeMockPath,
   seedDefaultRouteIfEmpty,
   startMockServer,
-  stopMockServer
+  stopMockServer,
+  updateMockRoute
 } from '../src/main/services/mock-server.service'
 
 describe('mock-server.service', () => {
@@ -126,6 +127,26 @@ describe('mock-server.service', () => {
     const res = await fetch(`${state.baseUrl}/api/hello`)
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('{"ok":true}')
+  })
+
+  it('updates an existing route', async () => {
+    const created = addMockRoute({
+      method: 'GET',
+      path: '/api/hello',
+      statusCode: 200,
+      body: '{"ok":true}',
+      headers: {}
+    })
+    const id = created.routes[0].id
+    const updated = updateMockRoute(id, {
+      method: 'GET',
+      path: '/api/hello',
+      statusCode: 201,
+      body: '{"updated":true}',
+      headers: {}
+    })
+    expect(updated.routes[0].statusCode).toBe(201)
+    expect(updated.routes[0].body).toBe('{"updated":true}')
   })
 
   it('exposes health endpoint', async () => {
