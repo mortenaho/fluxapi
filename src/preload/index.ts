@@ -159,7 +159,8 @@ const lisek: LisekAPI = {
     saveFile: (defaultPath?, filters?) => ipcRenderer.invoke('dialog:saveFile', defaultPath, filters)
   },
   fs: {
-    writeTextFile: (filePath, content) => ipcRenderer.invoke('fs:writeTextFile', filePath, content)
+    writeTextFile: (filePath, content) => ipcRenderer.invoke('fs:writeTextFile', filePath, content),
+    writeBinaryFile: (filePath, base64) => ipcRenderer.invoke('fs:writeBinaryFile', filePath, base64)
   },
   clipboard: {
     writeText: (text) => ipcRenderer.invoke('clipboard:writeText', text)

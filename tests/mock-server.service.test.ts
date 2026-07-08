@@ -30,7 +30,7 @@ describe('mock-server.service', () => {
 
     const res = await fetch(`${state.baseUrl}/api/hello`)
     expect(res.status).toBe(200)
-    expect(await res.text()).toBe('{"ok":true}')
+    expect(await res.text()).toBe('{\n  "ok": true\n}')
   })
 
   it('normalizes path without leading slash', async () => {
@@ -39,6 +39,7 @@ describe('mock-server.service', () => {
       path: 'api/hello',
       statusCode: 200,
       body: 'hi',
+      responseType: 'text',
       headers: {}
     })
     const state = await startMockServer(0)
@@ -52,6 +53,7 @@ describe('mock-server.service', () => {
       path: '/api/hello',
       statusCode: 200,
       body: 'hi',
+      responseType: 'text',
       headers: {}
     })
     const state = await startMockServer(0)
@@ -65,6 +67,7 @@ describe('mock-server.service', () => {
       path: 'http://127.0.0.1:4010/api/hello',
       statusCode: 200,
       body: 'hi',
+      responseType: 'text',
       headers: {}
     })
     const state = await startMockServer(0)
@@ -84,6 +87,7 @@ describe('mock-server.service', () => {
       path: '/api/hello',
       statusCode: 200,
       body: 'ok',
+      responseType: 'text',
       headers: {}
     })
     const state = await startMockServer(0)
@@ -126,7 +130,7 @@ describe('mock-server.service', () => {
     const state = await startMockServer(0)
     const res = await fetch(`${state.baseUrl}/api/hello`)
     expect(res.status).toBe(200)
-    expect(await res.text()).toBe('{"ok":true}')
+    expect(await res.text()).toBe('{\n  "ok": true\n}')
   })
 
   it('updates an existing route', async () => {
@@ -146,7 +150,47 @@ describe('mock-server.service', () => {
       headers: {}
     })
     expect(updated.routes[0].statusCode).toBe(201)
-    expect(updated.routes[0].body).toBe('{"updated":true}')
+    expect(updated.routes[0].body).toBe('{\n  "updated": true\n}')
+  })
+
+  it('beautifies json responses on save', () => {
+    const state = addMockRoute({
+      method: 'GET',
+      path: '/json',
+      statusCode: 200,
+      body: '{"a":1,"b":[2,3]}',
+      responseType: 'json',
+      headers: {}
+    })
+    expect(state.routes[0].body).toBe('{\n  "a": 1,\n  "b": [\n    2,\n    3\n  ]\n}')
+  })
+
+  it('serves file response from disk', async () => {
+    const { writeFileSync, unlinkSync } = await import('fs')
+    const { join } = await import('path')
+    const { tmpdir } = await import('os')
+    const filePath = join(tmpdir(), 'hello-from-file.txt')
+    writeFileSync(filePath, 'hello-from-file', 'utf8')
+    try {
+      addMockRoute({
+        method: 'GET',
+        path: '/file',
+        statusCode: 200,
+        body: '',
+        responseType: 'file',
+        filePath,
+        headers: {}
+      })
+      const state = await startMockServer(0)
+      const res = await fetch(`${state.baseUrl}/file`)
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('hello-from-file')
+      expect(res.headers.get('content-type')).toContain('text/plain')
+      expect(res.headers.get('content-disposition')).toContain('inline')
+      expect(res.headers.get('content-disposition')).toContain('hello-from-file.txt')
+    } finally {
+      unlinkSync(filePath)
+    }
   })
 
   it('exposes health endpoint', async () => {
@@ -155,6 +199,7 @@ describe('mock-server.service', () => {
       path: '/api/hello',
       statusCode: 200,
       body: 'ok',
+      responseType: 'text',
       headers: {}
     })
     const state = await startMockServer(0)

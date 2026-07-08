@@ -360,10 +360,19 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('settings:get', () => getSettings())
   ipcMain.handle('settings:set', (_, partial) => setSettings(partial))
 
-  ipcMain.handle('dialog:openFile', async (_, filters?) => {
+  ipcMain.handle('dialog:openFile', async (_, filters?: { name: string; extensions: string[] }[]) => {
+    const win = getMainWindow()
+    const hasAllFiles = filters?.some((f: { extensions: string[] }) => f.extensions?.includes('*'))
+    const dialogFilters = hasAllFiles
+      ? undefined
+      : filters?.filter(
+          (f: { name: string; extensions: string[] }) => f.extensions?.length && !f.extensions.includes('*')
+        )
+
     const result = await dialog.showOpenDialog({
+      ...(win ? { parent: win } : {}),
       properties: ['openFile'],
-      filters: filters || [{ name: 'All Files', extensions: ['*'] }]
+      ...(dialogFilters?.length ? { filters: dialogFilters } : {})
     })
     return result.canceled ? null : result.filePaths[0]
   })
@@ -383,6 +392,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
 
   ipcMain.handle('fs:writeTextFile', (_, filePath: string, content: string) => {
     writeFileSync(filePath, content, 'utf-8')
+  })
+
+  ipcMain.handle('fs:writeBinaryFile', (_, filePath: string, base64: string) => {
+    writeFileSync(filePath, Buffer.from(base64, 'base64'))
   })
 
   ipcMain.handle('clipboard:writeText', (_, text) => clipboard.writeText(text))

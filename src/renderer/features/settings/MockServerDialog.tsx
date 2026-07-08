@@ -28,8 +28,11 @@ import AddIcon from '@mui/icons-material/Add'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CheckIcon from '@mui/icons-material/Check'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useCallback, useEffect, useState } from 'react'
-import type { MockRoute, MockServerState } from '@shared/types'
+import type { MockFileDisposition, MockResponseType, MockRoute, MockServerState } from '@shared/types'
 import { useAppStore } from '../../stores/appStore'
 import { COMPACT } from '../../theme/compact'
 
@@ -55,7 +58,56 @@ const EMPTY_FORM = {
   method: 'GET',
   path: '/api/hello',
   statusCode: '200',
-  body: '{"ok":true}'
+  body: '{"ok":true}',
+  responseType: 'json' as MockResponseType,
+  filePath: '',
+  fileDisposition: 'auto' as MockFileDisposition
+}
+
+const FILE_DISPOSITIONS: { value: MockFileDisposition; label: string }[] = [
+  { value: 'auto', label: 'Auto (open PDF/image in browser)' },
+  { value: 'inline', label: 'Open in browser' },
+  { value: 'attachment', label: 'Force download' }
+]
+
+const RESPONSE_TYPES: { value: MockResponseType; label: string }[] = [
+  { value: 'json', label: 'JSON' },
+  { value: 'text', label: 'Text' },
+  { value: 'file', label: 'File' }
+]
+
+function tryBeautifyJson(body: string): string {
+  const trimmed = body.trim()
+  if (!trimmed) return body
+  return JSON.stringify(JSON.parse(trimmed), null, 2)
+}
+
+function routePreview(route: MockRoute): string {
+  if (route.responseType === 'file') {
+    return route.filePath ? `File: ${route.filePath.split(/[/\\]/).pop()}` : 'File (not set)'
+  }
+  return route.body
+}
+
+function routePayload(
+  method: string,
+  path: string,
+  statusCode: string,
+  body: string,
+  responseType: MockResponseType,
+  filePath: string,
+  fileDisposition: MockFileDisposition
+) {
+  return {
+    method,
+    path,
+    statusCode: parseInt(statusCode, 10) || 200,
+    body: responseType === 'file' ? '' : body,
+    responseType,
+    filePath: responseType === 'file' ? filePath : undefined,
+    fileDisposition: responseType === 'file' ? fileDisposition : undefined,
+    headers: {}
+  }
 }
 
 function formatStartError(err: unknown): string {
@@ -65,16 +117,6 @@ function formatStartError(err: unknown): string {
     if (code === 'EACCES') return 'Permission denied for this port. Try a port above 1024.'
   }
   return err instanceof Error ? err.message : 'Failed to start mock server'
-}
-
-function routePayload(method: string, path: string, statusCode: string, body: string) {
-  return {
-    method,
-    path,
-    statusCode: parseInt(statusCode, 10) || 200,
-    body,
-    headers: { 'content-type': 'application/json' }
-  }
 }
 
 function MethodChip({ method }: { method: string }) {
@@ -108,6 +150,9 @@ export default function MockServerDialog({ open, onClose }: Props) {
   const [path, setPath] = useState(EMPTY_FORM.path)
   const [statusCode, setStatusCode] = useState(EMPTY_FORM.statusCode)
   const [body, setBody] = useState(EMPTY_FORM.body)
+  const [responseType, setResponseType] = useState<MockResponseType>(EMPTY_FORM.responseType)
+  const [filePath, setFilePath] = useState(EMPTY_FORM.filePath)
+  const [fileDisposition, setFileDisposition] = useState<MockFileDisposition>(EMPTY_FORM.fileDisposition)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -131,6 +176,9 @@ export default function MockServerDialog({ open, onClose }: Props) {
     setPath(EMPTY_FORM.path)
     setStatusCode(EMPTY_FORM.statusCode)
     setBody(EMPTY_FORM.body)
+    setResponseType(EMPTY_FORM.responseType)
+    setFilePath(EMPTY_FORM.filePath)
+    setFileDisposition(EMPTY_FORM.fileDisposition)
   }, [])
 
   useEffect(() => {
@@ -146,14 +194,47 @@ export default function MockServerDialog({ open, onClose }: Props) {
     setPath(route.path)
     setStatusCode(String(route.statusCode))
     setBody(route.body)
+    setResponseType(route.responseType || 'json')
+    setFilePath(route.filePath || '')
+    setFileDisposition(route.fileDisposition || 'auto')
     setError(null)
+  }
+
+  const openInBrowser = (route: MockRoute) => {
+    if (!state.running) return
+    void window.lisek.shell.openExternal(`${state.baseUrl}${route.path}`)
+  }
+
+  const pickFile = async () => {
+    try {
+      const path = await window.lisek.dialog.openFile()
+      if (path) {
+        setFilePath(path)
+        setError(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not open file picker')
+    }
+  }
+
+  const beautifyJson = () => {
+    try {
+      setBody(tryBeautifyJson(body))
+      setError(null)
+    } catch {
+      setError('Invalid JSON. Fix syntax before beautifying.')
+    }
   }
 
   const saveRoute = async () => {
     setError(null)
+    if (responseType === 'file' && !filePath.trim()) {
+      setError('Select a file for file responses.')
+      return
+    }
     setBusy(true)
     try {
-      const payload = routePayload(method, path, statusCode, body)
+      const payload = routePayload(method, path, statusCode, body, responseType, filePath, fileDisposition)
       if (editingId) {
         await syncGlobalState(await window.lisek.mock.updateRoute(editingId, payload))
       } else {
@@ -171,7 +252,10 @@ export default function MockServerDialog({ open, onClose }: Props) {
     setError(null)
     setBusy(true)
     try {
-      const seedRoute = routePayload(method, path, statusCode, body)
+      const seedRoute =
+        state.routes.length === 0
+          ? routePayload(method, path, statusCode, body, responseType, filePath, fileDisposition)
+          : undefined
       const next = await window.lisek.mock.start(parseInt(port, 10) || 4010, seedRoute, true)
       if (next.port) setPort(String(next.port))
       await syncGlobalState(next)
@@ -206,7 +290,7 @@ export default function MockServerDialog({ open, onClose }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth disableEnforceFocus>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1, pb: 1 }}>
         <Box>
           <Typography variant="h6" fontWeight={600} lineHeight={1.2}>
@@ -320,7 +404,15 @@ export default function MockServerDialog({ open, onClose }: Props) {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <MethodChip method={route.method} />
+                <Stack spacing={0.5} alignItems="flex-start">
+                  <MethodChip method={route.method} />
+                  <Chip
+                    label={(route.responseType || 'json').toUpperCase()}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: 18, fontSize: 9, fontWeight: 600 }}
+                  />
+                </Stack>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="body2"
@@ -346,7 +438,7 @@ export default function MockServerDialog({ open, onClose }: Props) {
                       textOverflow: 'ellipsis'
                     }}
                   >
-                    {route.body}
+                    {routePreview(route)}
                   </Typography>
                 </Box>
                 <Stack direction="row" spacing={0.25}>
@@ -355,6 +447,13 @@ export default function MockServerDialog({ open, onClose }: Props) {
                       <EditOutlinedIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
+                  {state.running && (
+                    <Tooltip title="Open in browser">
+                      <IconButton size="small" onClick={() => openInBrowser(route)}>
+                        <OpenInNewIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {state.running && (
                     <Tooltip title={copiedId === route.id ? 'Copied!' : 'Copy URL'}>
                       <IconButton size="small" onClick={() => void copyUrl(route)}>
@@ -415,28 +514,89 @@ export default function MockServerDialog({ open, onClose }: Props) {
             onChange={(e) => setStatusCode(e.target.value)}
             sx={{ width: 80, ...COMPACT.input }}
           />
+          <FormControl size="small" sx={{ minWidth: 96, ...COMPACT.input }}>
+            <InputLabel sx={{ fontSize: 11 }}>Output</InputLabel>
+            <Select
+              label="Output"
+              value={responseType}
+              onChange={(e) => setResponseType(e.target.value as MockResponseType)}
+              sx={{ fontSize: 11, height: 28 }}
+            >
+              {RESPONSE_TYPES.map((t) => (
+                <MenuItem key={t.value} value={t.value} sx={{ fontSize: 12 }}>
+                  {t.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
 
-        <TextField
-          size="small"
-          label="Response body"
-          fullWidth
-          multiline
-          minRows={4}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          sx={{
-            mb: 1.5,
-            '& .MuiInputBase-input': { fontFamily: 'Consolas, monospace', fontSize: 12 }
-          }}
-        />
+        {responseType === 'file' ? (
+          <Box sx={{ mb: 1.5 }}>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 1 }}>
+              <Button size="small" variant="outlined" startIcon={<UploadFileIcon />} onClick={() => void pickFile()}>
+                Choose file
+              </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Consolas, monospace' }}>
+                {filePath || 'No file selected'}
+              </Typography>
+            </Stack>
+            <FormControl size="small" fullWidth sx={{ mb: 1, ...COMPACT.input }}>
+              <InputLabel sx={{ fontSize: 11 }}>Browser behavior</InputLabel>
+              <Select
+                label="Browser behavior"
+                value={fileDisposition}
+                onChange={(e) => setFileDisposition(e.target.value as MockFileDisposition)}
+                sx={{ fontSize: 11, height: 28 }}
+              >
+                {FILE_DISPOSITIONS.map((item) => (
+                  <MenuItem key={item.value} value={item.value} sx={{ fontSize: 12 }}>
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Pick a file, click Add route, then Start. Open the URL with{' '}
+              <Box component="span" sx={{ fontFamily: 'monospace' }}>
+                http://127.0.0.1:{port || '4010'}/your-path
+              </Box>
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <TextField
+              size="small"
+              label={responseType === 'json' ? 'JSON body' : 'Response body'}
+              fullWidth
+              multiline
+              minRows={4}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              sx={{
+                mb: 1,
+                '& .MuiInputBase-input': { fontFamily: 'Consolas, monospace', fontSize: 12 }
+              }}
+            />
+            {responseType === 'json' && (
+              <Button
+                size="small"
+                startIcon={<AutoFixHighIcon />}
+                onClick={beautifyJson}
+                sx={{ mb: 1.5 }}
+              >
+                Beautify JSON
+              </Button>
+            )}
+          </>
+        )}
 
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ mb: responseType === 'json' ? 0 : 1.5 }}>
           <Button
             size="small"
             variant="contained"
             startIcon={editingId ? <CheckIcon /> : <AddIcon />}
-            disabled={busy || !path.trim()}
+            disabled={busy || !path.trim() || (responseType === 'file' ? !filePath.trim() : !body.trim())}
             onClick={() => void saveRoute()}
           >
             {editingId ? 'Save changes' : 'Add route'}

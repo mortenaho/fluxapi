@@ -237,12 +237,20 @@ export interface SseMessage {
   timestamp: number
 }
 
+export type MockResponseType = 'json' | 'text' | 'file'
+
+export type MockFileDisposition = 'auto' | 'inline' | 'attachment'
+
 export interface MockRoute {
   id: string
   method: string
   path: string
   statusCode: number
   body: string
+  responseType?: MockResponseType
+  filePath?: string
+  fileDisposition?: MockFileDisposition
+  contentType?: string
   headers: Record<string, string>
 }
 
@@ -459,6 +467,7 @@ export interface LisekAPI {
   }
   fs: {
     writeTextFile: (filePath: string, content: string) => Promise<void>
+    writeBinaryFile: (filePath: string, base64: string) => Promise<void>
   }
   clipboard: {
     writeText: (text: string) => Promise<void>

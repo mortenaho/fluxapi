@@ -41,7 +41,8 @@ import {
 import {
   defaultResponseDownloadName,
   formatFullResponseText,
-  serializeFullResponse
+  serializeFullResponse,
+  suggestedBinaryDownloadName
 } from '../../utils/formatResponse'
 import { diffText, prettyJson } from '../../utils/responseDiff'
 import { COMPACT, formatBytes } from '../../theme/compact'
@@ -592,6 +593,18 @@ function ResponseActions({
   }, [response])
 
   const downloadFullResponse = useCallback(async () => {
+    if (response.bodyEncoding === 'base64') {
+      const suggested = suggestedBinaryDownloadName(response)
+      const ext = suggested.includes('.') ? suggested.split('.').pop() : 'bin'
+      const filePath = await window.lisek.dialog.saveFile(suggested, [
+        { name: 'All Files', extensions: ['*'] },
+        { name: 'Binary', extensions: [ext || 'bin'] }
+      ])
+      if (!filePath) return
+      await window.lisek.fs.writeBinaryFile(filePath, response.body)
+      return
+    }
+
     const filePath = await window.lisek.dialog.saveFile(defaultResponseDownloadName(response), [
       { name: 'JSON', extensions: ['json'] },
       { name: 'Text', extensions: ['txt'] }
