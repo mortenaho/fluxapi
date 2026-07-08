@@ -6,6 +6,7 @@ import ApiIcon from '@mui/icons-material/Api'
 import ImportExportIcon from '@mui/icons-material/ImportExport'
 import CodeIcon from '@mui/icons-material/Code'
 import CookiesIcon from '@mui/icons-material/Cookie'
+import DnsIcon from '@mui/icons-material/Dns'
 import type { SidebarPanel } from './SidebarMenu'
 
 const NAV_ITEMS: { id: SidebarPanel; label: string; icon: typeof FolderIcon }[] = [
@@ -21,6 +22,7 @@ interface Props {
   onImport: () => void
   onSnippet: () => void
   onCookies: () => void
+  onMock: () => void
 }
 
 function RailButton({
@@ -63,7 +65,8 @@ export default function IconRail({
   onSelectPanel,
   onImport,
   onSnippet,
-  onCookies
+  onCookies,
+  onMock
 }: Props) {
   return (
     <Box
@@ -97,6 +100,7 @@ export default function IconRail({
       <RailButton active={false} label="Import" icon={ImportExportIcon} onClick={onImport} />
       <RailButton active={false} label="cURL Snippet" icon={CodeIcon} onClick={onSnippet} />
       <RailButton active={false} label="Cookie Jar" icon={CookiesIcon} onClick={onCookies} />
+      <RailButton active={false} label="Mock Server" icon={DnsIcon} onClick={onMock} />
     </Box>
   )
 }

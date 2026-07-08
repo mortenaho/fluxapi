@@ -141,6 +141,15 @@ function migrateSchema(database: Database) {
   if (!requestColumns.has('notes')) {
     database.run("ALTER TABLE requests ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
   }
+  if (!requestColumns.has('sse_url')) {
+    database.run("ALTER TABLE requests ADD COLUMN sse_url TEXT NOT NULL DEFAULT ''")
+  }
+  if (!requestColumns.has('sse_messages_json')) {
+    database.run("ALTER TABLE requests ADD COLUMN sse_messages_json TEXT NOT NULL DEFAULT '[]'")
+  }
+  if (!requestColumns.has('graphql_operation_type')) {
+    database.run("ALTER TABLE requests ADD COLUMN graphql_operation_type TEXT NOT NULL DEFAULT 'query'")
+  }
 }
 
 export async function initDatabase(path: string): Promise<{ isNew: boolean }> {

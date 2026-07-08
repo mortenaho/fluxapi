@@ -32,6 +32,7 @@ import AuthTab from './AuthTab'
 import WebSocketTab from './WebSocketTab'
 import GraphQLTab from './GraphQLTab'
 import GrpcTab from './GrpcTab'
+import SseTab from './SseTab'
 import ScriptsTab from './ScriptsTab'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { resolveCollectionVariables } from '@shared/collectionVariables'
@@ -51,7 +52,7 @@ const METHOD_COLORS: Record<HttpMethod, string> = {
 }
 
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
-const PROTOCOLS: Protocol[] = ['http', 'graphql', 'websocket', 'grpc']
+const PROTOCOLS: Protocol[] = ['http', 'graphql', 'websocket', 'sse', 'grpc']
 
 type RequestSection = 'params' | 'headers' | 'body' | 'auth' | 'scripts' | 'protocol'
 
@@ -150,9 +151,11 @@ function RequestBuilderForm({
       ? 'GraphQL'
       : request.protocol === 'websocket'
         ? 'WebSocket'
-        : request.protocol === 'grpc'
-          ? 'gRPC'
-          : null
+        : request.protocol === 'sse'
+          ? 'SSE'
+          : request.protocol === 'grpc'
+            ? 'gRPC'
+            : null
 
   useEffect(() => {
     if (snippetOpen) flush()
@@ -310,6 +313,18 @@ function RequestBuilderForm({
             onKeyDown={handleUrlFieldKeyDown}
             sx={COMPACT.input}
           />
+        ) : request.protocol === 'sse' ? (
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="https://api.example.com/events"
+            value={request.sseUrl}
+            onChange={(e) =>
+              applyControlledInputChange(e.target, request.sseUrl, e.target.value, (v) => patch({ sseUrl: v, url: v }))
+            }
+            onKeyDown={handleUrlFieldKeyDown}
+            sx={COMPACT.input}
+          />
         ) : (
           <TextField
             size="small"
@@ -333,6 +348,32 @@ function RequestBuilderForm({
             </IconButton>
           </Tooltip>
         )}
+      </Box>
+
+      <Box sx={{ display: 'flex', gap: 1, mb: 0.75, flexWrap: 'wrap' }}>
+        <TextField
+          size="small"
+          label="Tags"
+          placeholder="smoke, api"
+          value={(request.tags || []).join(', ')}
+          onChange={(e) =>
+            patch({
+              tags: e.target.value
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean)
+            })
+          }
+          sx={{ minWidth: 140, flex: 1, ...COMPACT.input }}
+        />
+        <TextField
+          size="small"
+          label="Notes"
+          placeholder="Request notes"
+          value={request.notes || ''}
+          onChange={(e) => patch({ notes: e.target.value })}
+          sx={{ minWidth: 180, flex: 2, ...COMPACT.input }}
+        />
       </Box>
 
       <Tabs
@@ -510,6 +551,7 @@ function RequestBuilderForm({
         {section === 'scripts' && <ScriptsTab />}
         {section === 'protocol' && request.protocol === 'graphql' && <GraphQLTab />}
         {section === 'protocol' && request.protocol === 'websocket' && <WebSocketTab />}
+        {section === 'protocol' && request.protocol === 'sse' && <SseTab />}
         {section === 'protocol' && request.protocol === 'grpc' && <GrpcTab />}
       </RequestTabPanel>
 

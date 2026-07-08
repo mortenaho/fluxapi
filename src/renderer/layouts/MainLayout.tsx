@@ -23,6 +23,7 @@ import CurlSnippetDialog from '../features/snippets/CurlSnippetDialog'
 import SettingsDialog from '../features/settings/SettingsDialog'
 import ShortcutsDialog from '../features/settings/ShortcutsDialog'
 import CommandPalette from '../features/search/CommandPalette'
+import MockServerDialog from '../features/settings/MockServerDialog'
 import CookiesDialog from '../features/settings/CookiesDialog'
 import AboutDialog from '../features/about/AboutDialog'
 import ResizeHandle, { clamp, readStoredSize, storeSize } from '../components/ResizeHandle'
@@ -60,6 +61,7 @@ export default function MainLayout() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [envDialogOpen, setEnvDialogOpen] = useState(false)
   const [cookiesOpen, setCookiesOpen] = useState(false)
+  const [mockOpen, setMockOpen] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(() =>
     clamp(readStoredSize(STORAGE_SIDEBAR, SIDEBAR_DEFAULT), SIDEBAR_MIN, SIDEBAR_MAX)
   )
@@ -184,6 +186,7 @@ export default function MainLayout() {
           onImport={() => setImportDialog(true)}
           onSnippet={() => setSnippetOpen(true)}
           onCookies={() => setCookiesOpen(true)}
+          onMock={() => setMockOpen(true)}
         />
 
         <Box
@@ -276,6 +279,7 @@ export default function MainLayout() {
 
       <EnvironmentsDialog open={envDialogOpen} onClose={() => setEnvDialogOpen(false)} />
       <CookiesDialog open={cookiesOpen} onClose={() => setCookiesOpen(false)} />
+      <MockServerDialog open={mockOpen} onClose={() => setMockOpen(false)} />
       <ImportDialog />
       <CurlSnippetDialog />
       <SettingsDialog

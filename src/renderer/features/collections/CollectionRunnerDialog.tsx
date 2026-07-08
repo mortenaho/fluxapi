@@ -39,6 +39,8 @@ export default function CollectionRunnerDialog({ open, collection, onClose }: Pr
   const [delayMs, setDelayMs] = useState(settings.runnerDelayMs ?? 0)
   const [results, setResults] = useState<CollectionRunResult[]>([])
   const [report, setReport] = useState<CollectionRunReport | null>(null)
+  const [dataFilePath, setDataFilePath] = useState<string | null>(null)
+  const [dataFileFormat, setDataFileFormat] = useState<'csv' | 'json'>('csv')
 
   const run = async () => {
     if (!collection) return
@@ -50,7 +52,9 @@ export default function CollectionRunnerDialog({ open, collection, onClose }: Pr
       const outcome = await window.lisek.runner.runCollection(collection.id, {
         stopOnFailure,
         iterations,
-        delayMs
+        delayMs,
+        dataFilePath: dataFilePath || undefined,
+        dataFileFormat: dataFilePath ? dataFileFormat : undefined
       })
       setResults(outcome)
       setReport({
@@ -117,6 +121,32 @@ export default function CollectionRunnerDialog({ open, collection, onClose }: Pr
           label="Stop on first failure"
           sx={{ mb: 1 }}
         />
+        <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={async () => {
+              const path = await window.lisek.dialog.openFile([
+                { name: 'Data', extensions: ['csv', 'json'] }
+              ])
+              if (!path) return
+              setDataFilePath(path)
+              setDataFileFormat(path.toLowerCase().endsWith('.json') ? 'json' : 'csv')
+            }}
+          >
+            {dataFilePath ? 'Change data file' : 'Load CSV/JSON data'}
+          </Button>
+          {dataFilePath && (
+            <>
+              <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>
+                {dataFilePath.split(/[/\\]/).pop()}
+              </Typography>
+              <Button size="small" onClick={() => setDataFilePath(null)}>
+                Clear
+              </Button>
+            </>
+          )}
+        </Box>
         {running && <LinearProgress sx={{ mb: 2 }} />}
         {results.length > 0 && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>

@@ -1,4 +1,6 @@
-export type Protocol = 'http' | 'graphql' | 'websocket' | 'grpc'
+export type Protocol = 'http' | 'graphql' | 'websocket' | 'grpc' | 'sse'
+export type GraphQLOperationType = 'query' | 'subscription'
+export type DataFileFormat = 'csv' | 'json'
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
 export type BodyType = 'none' | 'raw' | 'form-data' | 'x-www-form-urlencoded'
 export type AuthType = 'none' | 'bearer' | 'basic' | 'apikey' | 'oauth2'
@@ -57,12 +59,15 @@ export interface CollectionRunResult {
   error?: string
   durationMs: number
   iteration?: number
+  dataRow?: number
 }
 
 export interface CollectionRunOptions {
   stopOnFailure?: boolean
   iterations?: number
   delayMs?: number
+  dataFilePath?: string
+  dataFileFormat?: DataFileFormat
 }
 
 export interface CollectionRunReport {
@@ -107,8 +112,11 @@ export interface RequestModel {
   protocol: Protocol
   graphqlQuery: string
   graphqlVariables: string
+  graphqlOperationType?: GraphQLOperationType
   wsUrl: string
   wsMessages: WsMessage[]
+  sseUrl: string
+  sseMessages: SseMessage[]
   grpcTarget: string
   grpcService: string
   grpcMethod: string
@@ -210,6 +218,35 @@ export interface WsMessage {
   timestamp: number
 }
 
+export interface SseMessage {
+  id: string
+  event?: string
+  data: string
+  timestamp: number
+}
+
+export interface MockRoute {
+  id: string
+  method: string
+  path: string
+  statusCode: number
+  body: string
+  headers: Record<string, string>
+}
+
+export interface MockServerState {
+  running: boolean
+  port: number
+  baseUrl: string
+  routes: MockRoute[]
+}
+
+export interface GrpcReflectionResult {
+  target: string
+  services: GrpcServiceInfo[]
+  reflectedAt: number
+}
+
 export interface ProtoFileModel {
   id: string
   name: string
@@ -299,6 +336,7 @@ export interface LisekAPI {
     openapiFromUrl: (url: string) => Promise<{ collectionId: string; specId: string; count: number }>
     insomnia: (filePath: string) => Promise<{ collectionId: string; count: number }>
     insomniaFromUrl: (url: string) => Promise<{ collectionId: string; count: number }>
+    har: (filePath: string, collectionId?: string | null) => Promise<{ collectionId: string; count: number }>
     curl: (curlString: string, collectionId?: string | null) => Promise<RequestModel>
   }
   export: {
@@ -337,6 +375,22 @@ export interface LisekAPI {
   }
   graphql: {
     introspect: (url: string, headers?: KeyValue[]) => Promise<unknown>
+    subscribe: (url: string, query: string, variables: string, headers?: KeyValue[]) => Promise<string>
+    unsubscribe: (connectionId: string) => Promise<void>
+    onSubscriptionMessage: (callback: (connectionId: string, message: WsMessage) => void) => () => void
+  }
+  sse: {
+    connect: (url: string, headers: KeyValue[]) => Promise<string>
+    disconnect: (connectionId: string) => Promise<void>
+    onMessage: (callback: (connectionId: string, message: SseMessage) => void) => () => void
+  }
+  mock: {
+    getState: () => Promise<MockServerState>
+    start: (port?: number) => Promise<MockServerState>
+    stop: () => Promise<MockServerState>
+    addRoute: (route: Omit<MockRoute, 'id'>) => Promise<MockServerState>
+    removeRoute: (id: string) => Promise<MockServerState>
+    clearRoutes: () => Promise<MockServerState>
   }
   grpc: {
     loadProto: (filePath: string) => Promise<{ protoId: string; services: GrpcServiceInfo[] }>

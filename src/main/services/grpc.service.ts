@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import * as protoLoader from '@grpc/proto-loader'
-import { readFileSync } from 'fs'
-import { dirname, basename } from 'path'
+import { readFileSync, existsSync } from 'fs'
+import { dirname, basename, join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { getOne, runQuery, getAll } from '../db'
 import type { GrpcCallType, GrpcServiceInfo, KeyValue } from '../../../shared/types'
@@ -187,6 +187,48 @@ export function deleteProtoFile(id: string) {
   loadedPackages.delete(id)
 }
 
-export function reflectGrpc(_target: string): GrpcServiceInfo[] {
-  return []
+function resolveReflectionProtoPath(): string {
+  const candidates = [
+    join(process.cwd(), 'resources/grpc/reflection_v1alpha.proto'),
+    join(process.resourcesPath, 'grpc/reflection_v1alpha.proto'),
+    join(__dirname, '../../resources/grpc/reflection_v1alpha.proto')
+  ]
+  for (const path of candidates) {
+    if (existsSync(path)) return path
+  }
+  return candidates[0]
+}
+
+export function reflectGrpc(target: string): Promise<GrpcServiceInfo[]> {
+  const protoPath = resolveReflectionProtoPath()
+  const packageDefinition = protoLoader.loadSync(protoPath, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true
+  })
+  const pkg = grpc.loadPackageDefinition(packageDefinition) as unknown as {
+    grpc: { reflection: { v1alpha: { ServerReflection: new (...args: unknown[]) => grpc.Client } } }
+  }
+  const Client = pkg.grpc.reflection.v1alpha.ServerReflection
+
+  return new Promise((resolve, reject) => {
+    const client = new Client(target, grpc.credentials.createInsecure()) as grpc.Client & {
+      serverReflectionInfo: () => grpc.ClientDuplexStream<Record<string, unknown>, Record<string, unknown>>
+    }
+    const call = client.serverReflectionInfo()
+    const services: GrpcServiceInfo[] = []
+
+    call.on('data', (response: { list_services_response?: { service?: { name: string }[] } }) => {
+      const list = response.list_services_response?.service || []
+      for (const item of list) {
+        services.push({ name: item.name, methods: [] })
+      }
+    })
+    call.on('error', (err) => reject(err))
+    call.on('end', () => resolve(services))
+    call.write({ list_services: '' })
+    call.end()
+  })
 }

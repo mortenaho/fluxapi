@@ -30,8 +30,11 @@ type RequestRow = {
   protocol: string
   graphql_query: string
   graphql_variables: string
+  graphql_operation_type?: string
   ws_url: string
   ws_messages_json: string
+  sse_url?: string
+  sse_messages_json?: string
   grpc_target: string
   grpc_service: string
   grpc_method: string
@@ -98,8 +101,11 @@ export function rowToRequest(row: RequestRow): RequestModel {
     protocol: row.protocol as RequestModel['protocol'],
     graphqlQuery: row.graphql_query,
     graphqlVariables: row.graphql_variables,
+    graphqlOperationType: (row.graphql_operation_type as RequestModel['graphqlOperationType']) || 'query',
     wsUrl: row.ws_url,
     wsMessages: JSON.parse(row.ws_messages_json),
+    sseUrl: row.sse_url || '',
+    sseMessages: JSON.parse(row.sse_messages_json || '[]'),
     grpcTarget: row.grpc_target,
     grpcService: row.grpc_service,
     grpcMethod: row.grpc_method,
@@ -141,8 +147,11 @@ export function requestToRow(req: RequestModel) {
     protocol: req.protocol,
     graphql_query: req.graphqlQuery,
     graphql_variables: req.graphqlVariables,
+    graphql_operation_type: req.graphqlOperationType || 'query',
     ws_url: req.wsUrl,
     ws_messages_json: JSON.stringify(req.wsMessages),
+    sse_url: req.sseUrl || '',
+    sse_messages_json: JSON.stringify(req.sseMessages || []),
     grpc_target: req.grpcTarget,
     grpc_service: req.grpcService,
     grpc_method: req.grpcMethod,
@@ -276,8 +285,11 @@ export function saveRequest(data: Partial<RequestModel> & { id?: string }): Requ
     protocol: data.protocol ?? existing?.protocol ?? 'http',
     graphqlQuery: data.graphqlQuery ?? existing?.graphqlQuery ?? '',
     graphqlVariables: data.graphqlVariables ?? existing?.graphqlVariables ?? '{}',
+    graphqlOperationType: data.graphqlOperationType ?? existing?.graphqlOperationType ?? 'query',
     wsUrl: data.wsUrl ?? existing?.wsUrl ?? '',
     wsMessages: data.wsMessages ?? existing?.wsMessages ?? [],
+    sseUrl: data.sseUrl ?? existing?.sseUrl ?? '',
+    sseMessages: data.sseMessages ?? existing?.sseMessages ?? [],
     grpcTarget: data.grpcTarget ?? existing?.grpcTarget ?? '',
     grpcService: data.grpcService ?? existing?.grpcService ?? '',
     grpcMethod: data.grpcMethod ?? existing?.grpcMethod ?? '',
@@ -297,13 +309,14 @@ export function saveRequest(data: Partial<RequestModel> & { id?: string }): Requ
   if (existing) {
     runQuery(
       `UPDATE requests SET collection_id=?, name=?, method=?, url=?, headers_json=?, params_json=?, body_type=?, body_json=?,
-       auth_type=?, auth_json=?, pre_request_script=?, test_script=?, protocol=?, graphql_query=?, graphql_variables=?,
-       ws_url=?, ws_messages_json=?, grpc_target=?, grpc_service=?, grpc_method=?, grpc_call_type=?, grpc_proto_id=?,
+       auth_type=?, auth_json=?, pre_request_script=?, test_script=?, protocol=?, graphql_query=?, graphql_variables=?, graphql_operation_type=?,
+       ws_url=?, ws_messages_json=?, sse_url=?, sse_messages_json=?, grpc_target=?, grpc_service=?, grpc_method=?, grpc_call_type=?, grpc_proto_id=?,
        grpc_metadata_json=?, grpc_message_json=?, sort_order=?, pinned=?, tags_json=?, notes=?, updated_at=? WHERE id=?`,
       [
         row.collection_id, row.name, row.method, row.url, row.headers_json, row.params_json, row.body_type, row.body_json,
         row.auth_type, row.auth_json, row.pre_request_script, row.test_script, row.protocol, row.graphql_query,
-        row.graphql_variables, row.ws_url, row.ws_messages_json, row.grpc_target, row.grpc_service, row.grpc_method,
+        row.graphql_variables, row.graphql_operation_type, row.ws_url, row.ws_messages_json, row.sse_url, row.sse_messages_json,
+        row.grpc_target, row.grpc_service, row.grpc_method,
         row.grpc_call_type, row.grpc_proto_id, row.grpc_metadata_json, row.grpc_message_json, row.sort_order, row.pinned,
         row.tags_json, row.notes, row.updated_at, row.id
       ]
@@ -311,14 +324,15 @@ export function saveRequest(data: Partial<RequestModel> & { id?: string }): Requ
   } else {
     runQuery(
       `INSERT INTO requests (id, collection_id, name, method, url, headers_json, params_json, body_type, body_json,
-       auth_type, auth_json, pre_request_script, test_script, protocol, graphql_query, graphql_variables,
-       ws_url, ws_messages_json, grpc_target, grpc_service, grpc_method, grpc_call_type, grpc_proto_id,
+       auth_type, auth_json, pre_request_script, test_script, protocol, graphql_query, graphql_variables, graphql_operation_type,
+       ws_url, ws_messages_json, sse_url, sse_messages_json, grpc_target, grpc_service, grpc_method, grpc_call_type, grpc_proto_id,
        grpc_metadata_json, grpc_message_json, sort_order, pinned, tags_json, notes, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         row.id, row.collection_id, row.name, row.method, row.url, row.headers_json, row.params_json, row.body_type,
         row.body_json, row.auth_type, row.auth_json, row.pre_request_script, row.test_script, row.protocol,
-        row.graphql_query, row.graphql_variables, row.ws_url, row.ws_messages_json, row.grpc_target, row.grpc_service,
+        row.graphql_query, row.graphql_variables, row.graphql_operation_type, row.ws_url, row.ws_messages_json, row.sse_url,
+        row.sse_messages_json, row.grpc_target, row.grpc_service,
         row.grpc_method, row.grpc_call_type, row.grpc_proto_id, row.grpc_metadata_json, row.grpc_message_json,
         row.sort_order, row.pinned, row.tags_json, row.notes, row.created_at, row.updated_at
       ]
@@ -671,8 +685,11 @@ export function createEmptyRequest(collectionId: string | null = null): RequestM
     protocol: 'http',
     graphqlQuery: '',
     graphqlVariables: '{}',
+    graphqlOperationType: 'query',
     wsUrl: '',
     wsMessages: [],
+    sseUrl: '',
+    sseMessages: [],
     grpcTarget: '',
     grpcService: '',
     grpcMethod: '',

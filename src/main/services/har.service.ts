@@ -1,6 +1,7 @@
-import { writeFileSync } from 'fs'
-import type { HistoryModel } from '../../../shared/types'
-import { getRequest, listHistory } from './repository'
+import { writeFileSync, readFileSync } from 'fs'
+import { v4 as uuidv4 } from 'uuid'
+import type { HistoryModel, HttpMethod, KeyValue } from '../../../shared/types'
+import { getRequest, listHistory, createCollection, saveRequest, createEmptyRequest } from './repository'
 
 export function exportHarFromHistory(historyId: string, filePath: string): void {
   const entry = listHistory(500).find((h) => h.id === historyId)
@@ -18,7 +19,7 @@ export function exportHarFromRequest(requestId: string, filePath: string): void 
       {
         log: {
           version: '1.2',
-          creator: { name: 'Lisek', version: '1.3.0' },
+          creator: { name: 'Lisek', version: '1.4.0' },
           entries: [
             {
               startedDateTime: new Date(started).toISOString(),
@@ -114,5 +115,71 @@ function buildHarFromHistory(entry: HistoryModel) {
         }
       ]
     }
+  }
+}
+
+type HarEntry = {
+  request?: {
+    method?: string
+    url?: string
+    headers?: { name: string; value: string }[]
+    queryString?: { name: string; value: string }[]
+    postData?: { mimeType?: string; text?: string }
+  }
+}
+
+export function importHar(
+  filePath: string,
+  parentCollectionId: string | null = null
+): { collectionId: string; count: number } {
+  const parsed = JSON.parse(readFileSync(filePath, 'utf-8')) as { log?: { entries?: HarEntry[] } }
+  const entries = parsed.log?.entries || []
+  if (entries.length === 0) throw new Error('No entries found in HAR file')
+
+  const collectionId = parentCollectionId || createCollection({ name: `HAR Import ${new Date().toLocaleDateString()}` }).id
+  let count = 0
+
+  for (const [index, entry] of entries.entries()) {
+    const req = entry.request
+    if (!req?.url) continue
+    const headers: KeyValue[] = (req.headers || []).map((h, i) => ({
+      id: String(i),
+      key: h.name,
+      value: h.value,
+      enabled: true
+    }))
+    const params: KeyValue[] = (req.queryString || []).map((p, i) => ({
+      id: String(i),
+      key: p.name,
+      value: p.value,
+      enabled: true
+    }))
+    const bodyRaw = req.postData?.text || ''
+    const bodyType = bodyRaw ? 'raw' : 'none'
+
+    saveRequest({
+      ...createEmptyRequest(collectionId),
+      name: `${req.method || 'GET'} ${truncateUrl(req.url)}`,
+      method: (req.method || 'GET').toUpperCase() as HttpMethod,
+      url: req.url,
+      headers,
+      params,
+      bodyType,
+      bodyRaw,
+      bodyRawContentType: req.postData?.mimeType || 'application/json',
+      sortOrder: index
+    })
+    count++
+  }
+
+  return { collectionId, count }
+}
+
+function truncateUrl(url: string): string {
+  try {
+    const u = new URL(url)
+    return u.pathname.length > 40 ? `${u.pathname.slice(0, 37)}…` : u.pathname
+  } catch {
+    return url.length > 40 ? `${url.slice(0, 37)}…` : url
   }
 }

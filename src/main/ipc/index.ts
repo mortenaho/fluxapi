@@ -27,7 +27,20 @@ import {
 } from '../services/cookie-jar.service'
 import { runCollection, exportRunnerReport } from '../services/runner.service'
 import { exportWorkspace, importWorkspace } from '../services/workspace.service'
-import { exportHarFromHistory, exportHarFromRequest } from '../services/har.service'
+import { exportHarFromHistory, exportHarFromRequest, importHar } from '../services/har.service'
+import { connectSse, disconnectSse } from '../services/sse.service'
+import {
+  connectGraphQLSubscription,
+  disconnectGraphQLSubscription
+} from '../services/graphql-subscription.service'
+import {
+  addMockRoute,
+  clearMockRoutes,
+  getMockServerState,
+  removeMockRoute,
+  startMockServer,
+  stopMockServer
+} from '../services/mock-server.service'
 import {
   listCollections,
   createCollection,
@@ -159,6 +172,29 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
 
   ipcMain.handle('graphql:introspect', async (_, { url, headers }) => introspectGraphQL(url, headers))
 
+  ipcMain.handle('graphql:subscribe', async (_, { url, query, variables, headers }) => {
+    const id = await connectGraphQLSubscription(url, query, variables, headers || [], (connectionId, message) => {
+      getMainWindow()?.webContents.send('graphql:subscription', connectionId, message)
+    })
+    return id
+  })
+  ipcMain.handle('graphql:unsubscribe', (_, connectionId) => disconnectGraphQLSubscription(connectionId))
+
+  ipcMain.handle('sse:connect', async (_, url, headers) => {
+    const id = await connectSse(url, headers, (connectionId, message) => {
+      getMainWindow()?.webContents.send('sse:message', connectionId, message)
+    })
+    return id
+  })
+  ipcMain.handle('sse:disconnect', (_, connectionId) => disconnectSse(connectionId))
+
+  ipcMain.handle('mock:getState', () => getMockServerState())
+  ipcMain.handle('mock:start', async (_, port?) => startMockServer(port))
+  ipcMain.handle('mock:stop', () => stopMockServer())
+  ipcMain.handle('mock:addRoute', (_, route) => addMockRoute(route))
+  ipcMain.handle('mock:removeRoute', (_, id) => removeMockRoute(id))
+  ipcMain.handle('mock:clearRoutes', () => clearMockRoutes())
+
   ipcMain.handle('collections:list', () => listCollections())
   ipcMain.handle('collections:create', (_, data) => createCollection(data))
   ipcMain.handle('collections:update', (_, id, data) => updateCollection(id, data))
@@ -186,6 +222,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   ipcMain.handle('import:openapiUrl', (_, url) => importOpenApiFromUrl(url))
   ipcMain.handle('import:insomnia', (_, filePath) => importInsomnia(filePath))
   ipcMain.handle('import:insomniaUrl', (_, url) => importInsomniaFromUrl(url))
+  ipcMain.handle('import:har', (_, filePath, collectionId?) => importHar(filePath, collectionId ?? null))
   ipcMain.handle('import:curl', (_, curlString, collectionId?) => {
     const parsed = parseCurl(curlString)
     return saveRequest({ ...createEmptyRequest(collectionId ?? null), ...parsed })

@@ -258,6 +258,28 @@ export default function ImportDialog() {
           <ListItemButton onClick={() => setImportDialog(true, 'curl')}>
             <ListItemText primary="cURL" secondary="Paste cURL command" />
           </ListItemButton>
+          <ListItemButton
+            onClick={() => {
+              void (async () => {
+                const path = await window.lisek.dialog.openFile([
+                  { name: 'HAR', extensions: ['har', 'json'] }
+                ])
+                if (!path) return
+                setLoading(true)
+                setError(null)
+                try {
+                  await window.lisek.import.har(path)
+                  await refreshAfterCollectionImport('postman')
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Import failed')
+                } finally {
+                  setLoading(false)
+                }
+              })()
+            }}
+          >
+            <ListItemText primary="HAR" secondary=".har or .json HTTP Archive" />
+          </ListItemButton>
         </List>
       </DialogContent>
       <DialogActions>

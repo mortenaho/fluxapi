@@ -15,11 +15,19 @@ export interface FetchOptions {
   proxyUrl?: string
 }
 
-function createDispatcher(sslVerify: boolean, proxyUrl?: string) {
+function isLocalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase()
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0'
+}
+
+function createDispatcher(sslVerify: boolean, proxyUrl?: string, targetUrl?: string) {
   const tls = sslVerify === false ? { rejectUnauthorized: false as const } : undefined
-  if (proxyUrl?.trim()) {
+  const bypassProxy = targetUrl ? isLocalHost(new URL(targetUrl).hostname) : false
+  const effectiveProxy = proxyUrl?.trim() && !bypassProxy ? proxyUrl.trim() : undefined
+
+  if (effectiveProxy) {
     return new ProxyAgent({
-      uri: proxyUrl.trim(),
+      uri: effectiveProxy,
       ...(tls ? { requestTls: tls, proxyTls: tls } : {})
     })
   }
@@ -33,7 +41,7 @@ export async function secureFetch(
   options: FetchOptions = {}
 ): Promise<Response> {
   const sslVerify = options.sslVerify !== false
-  const dispatcher = createDispatcher(sslVerify, options.proxyUrl)
+  const dispatcher = createDispatcher(sslVerify, options.proxyUrl, url)
   if (!dispatcher) {
     return fetch(url, init)
   }

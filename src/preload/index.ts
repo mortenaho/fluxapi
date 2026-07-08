@@ -37,6 +37,7 @@ const lisek: LisekAPI = {
     openapiFromUrl: (url) => ipcRenderer.invoke('import:openapiUrl', url),
     insomnia: (filePath) => ipcRenderer.invoke('import:insomnia', filePath),
     insomniaFromUrl: (url) => ipcRenderer.invoke('import:insomniaUrl', url),
+    har: (filePath, collectionId) => ipcRenderer.invoke('import:har', filePath, collectionId),
     curl: (curlString, collectionId?) => ipcRenderer.invoke('import:curl', curlString, collectionId)
   },
   export: {
@@ -85,7 +86,34 @@ const lisek: LisekAPI = {
     }
   },
   graphql: {
-    introspect: (url, headers?) => ipcRenderer.invoke('graphql:introspect', { url, headers })
+    introspect: (url, headers?) => ipcRenderer.invoke('graphql:introspect', { url, headers }),
+    subscribe: (url, query, variables, headers) =>
+      ipcRenderer.invoke('graphql:subscribe', { url, query, variables, headers }),
+    unsubscribe: (connectionId) => ipcRenderer.invoke('graphql:unsubscribe', connectionId),
+    onSubscriptionMessage: (callback) => {
+      const handler = (_: unknown, connectionId: string, message: unknown) =>
+        callback(connectionId, message as import('../../shared/types').WsMessage)
+      ipcRenderer.on('graphql:subscription', handler)
+      return () => ipcRenderer.removeListener('graphql:subscription', handler)
+    }
+  },
+  sse: {
+    connect: (url, headers) => ipcRenderer.invoke('sse:connect', url, headers),
+    disconnect: (connectionId) => ipcRenderer.invoke('sse:disconnect', connectionId),
+    onMessage: (callback) => {
+      const handler = (_: unknown, connectionId: string, message: unknown) =>
+        callback(connectionId, message as import('../../shared/types').SseMessage)
+      ipcRenderer.on('sse:message', handler)
+      return () => ipcRenderer.removeListener('sse:message', handler)
+    }
+  },
+  mock: {
+    getState: () => ipcRenderer.invoke('mock:getState'),
+    start: (port) => ipcRenderer.invoke('mock:start', port),
+    stop: () => ipcRenderer.invoke('mock:stop'),
+    addRoute: (route) => ipcRenderer.invoke('mock:addRoute', route),
+    removeRoute: (id) => ipcRenderer.invoke('mock:removeRoute', id),
+    clearRoutes: () => ipcRenderer.invoke('mock:clearRoutes')
   },
   grpc: {
     loadProto: (filePath) => ipcRenderer.invoke('grpc:loadProto', filePath),

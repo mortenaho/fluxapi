@@ -39,6 +39,9 @@ interface AppState {
   loading: boolean
   wsConnectionId: string | null
   wsMessages: import('@shared/types').WsMessage[]
+  sseConnectionId: string | null
+  sseMessages: import('@shared/types').SseMessage[]
+  gqlSubscriptionId: string | null
   settings: Settings
   snippetOpen: boolean
   importDialogOpen: boolean
@@ -102,8 +105,11 @@ const emptyRequest = (): RequestModel => ({
   protocol: 'http',
   graphqlQuery: '',
   graphqlVariables: '{}',
+  graphqlOperationType: 'query',
   wsUrl: '',
   wsMessages: [],
+  sseUrl: '',
+  sseMessages: [],
   grpcTarget: '',
   grpcService: '',
   grpcMethod: '',
@@ -149,6 +155,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   loading: false,
   wsConnectionId: null,
   wsMessages: [],
+  sseConnectionId: null,
+  sseMessages: [],
+  gqlSubscriptionId: null,
   settings: { sslVerify: true, timeoutMs: 30000, followRedirects: true, theme: 'light' },
   snippetOpen: false,
   importDialogOpen: false,
@@ -384,6 +393,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (saved.protocol === 'websocket') {
         const id = await window.lisek.ws.connect(saved.wsUrl || saved.url, saved.headers)
         set({ wsConnectionId: id })
+        return
+      }
+
+      if (saved.protocol === 'sse') {
+        const id = await window.lisek.sse.connect(saved.sseUrl || saved.url, saved.headers)
+        set({ sseConnectionId: id, sseMessages: [] })
+        return
+      }
+
+      if (saved.protocol === 'graphql' && saved.graphqlOperationType === 'subscription') {
+        const id = await window.lisek.graphql.subscribe(
+          saved.url,
+          saved.graphqlQuery,
+          saved.graphqlVariables,
+          saved.headers
+        )
+        set({ gqlSubscriptionId: id, wsMessages: [] })
         return
       }
 

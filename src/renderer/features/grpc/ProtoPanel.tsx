@@ -8,9 +8,11 @@ import {
   IconButton,
   Collapse,
   Chip,
-  Tooltip
+  Tooltip,
+  TextField
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import SearchIcon from '@mui/icons-material/Search'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import ExpandLess from '@mui/icons-material/ExpandLess'
 import ExpandMore from '@mui/icons-material/ExpandMore'
@@ -35,6 +37,10 @@ export default function ProtoPanel() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [servicesByProto, setServicesByProto] = useState<Record<string, GrpcServiceInfo[]>>({})
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [reflectTarget, setReflectTarget] = useState('localhost:50051')
+  const [reflectError, setReflectError] = useState<string | null>(null)
+  const [reflectedServices, setReflectedServices] = useState<GrpcServiceInfo[]>([])
+  const [reflecting, setReflecting] = useState(false)
 
   useEffect(() => {
     void loadProtoFiles()
@@ -83,8 +89,64 @@ export default function ProtoPanel() {
     [expanded, servicesByProto]
   )
 
+  const reflect = async () => {
+    if (!reflectTarget.trim()) return
+    setReflecting(true)
+    setReflectError(null)
+    try {
+      const services = await window.lisek.grpc.reflect(reflectTarget.trim())
+      setReflectedServices(services)
+    } catch (e) {
+      setReflectError(e instanceof Error ? e.message : String(e))
+      setReflectedServices([])
+    } finally {
+      setReflecting(false)
+    }
+  }
+
   return (
     <Box>
+      <Box sx={{ mb: 1.5, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+          Server reflection
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.75 }}>
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="localhost:50051"
+            value={reflectTarget}
+            onChange={(e) => setReflectTarget(e.target.value)}
+          />
+          <Button size="small" variant="contained" onClick={() => void reflect()} disabled={reflecting}>
+            {reflecting ? '…' : 'Reflect'}
+          </Button>
+        </Box>
+        {reflectError && (
+          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+            {reflectError}
+          </Typography>
+        )}
+        {reflectedServices.length > 0 && (
+          <Box sx={{ mt: 1 }}>
+            {reflectedServices.map((service) => (
+              <Box key={service.name} sx={{ py: 0.25 }}>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
+                  {service.name}
+                </Typography>
+                {service.methods.length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.25 }}>
+                    {service.methods.map((method) => (
+                      <Chip key={method.name} label={method.name} size="small" sx={{ height: 18, fontSize: 10 }} />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="caption" color="text.secondary">
           {protoFiles.length > 0 ? `${protoFiles.length} file${protoFiles.length > 1 ? 's' : ''}` : 'gRPC definitions'}

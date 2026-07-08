@@ -1,6 +1,6 @@
 {
   "name": "lisek",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Offline API client for HTTP, GraphQL, WebSocket, and gRPC",
   "main": "./out/main/index.js",
   "author": "Seyed Morteza Hosseini <mortenaho@gmail.com> (https://mortenaho.ir)",
@@ -24,6 +24,7 @@
     "@apidevtools/swagger-parser": "^10.1.1",
     "@grpc/grpc-js": "^1.13.0",
     "@grpc/proto-loader": "^0.7.15",
+    "@grpc/reflection": "^1.0.4",
     "graphql": "^16.10.0",
     "sql.js": "^1.14.1",
     "undici": "^6.27.0",
@@ -82,6 +83,10 @@
       {
         "from": "resources/lisek-logo.png",
         "to": "lisek-logo.png"
+      },
+      {
+        "from": "resources/grpc/reflection_v1alpha.proto",
+        "to": "grpc/reflection_v1alpha.proto"
       }
     ],
     "asarUnpack": [

@@ -7,7 +7,9 @@ import {
   ListItemText,
   Collapse,
   CircularProgress,
-  Alert
+  Alert,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material'
 import ExpandLess from '@mui/icons-material/ExpandLess'
 import ExpandMore from '@mui/icons-material/ExpandMore'
@@ -163,7 +165,16 @@ export default function GraphQLTab() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={request.graphqlOperationType || 'query'}
+          onChange={(_, value) => value && patch({ graphqlOperationType: value })}
+        >
+          <ToggleButton value="query">Query</ToggleButton>
+          <ToggleButton value="subscription">Subscription</ToggleButton>
+        </ToggleButtonGroup>
         <Button size="small" onClick={() => void introspect()} disabled={loading || !request.url}>
           {loading ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
           Introspect Schema

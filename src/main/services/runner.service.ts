@@ -16,6 +16,8 @@ import {
 import { sendHttpRequest } from './http.service'
 import { runScript } from './script.service'
 import { getSettings } from '../db'
+import { parseRunnerDataFile, mergeDataRow } from './runner-data.service'
+import type { KeyValue } from '../../../shared/types'
 
 function collectCollectionRequestIds(collectionId: string, allCollections: { id: string; parentId: string | null }[]): string[] {
   const childIds = allCollections.filter((c) => c.parentId === collectionId).map((c) => c.id)
@@ -29,11 +31,13 @@ function delay(ms: number): Promise<void> {
 async function runSingleRequest(
   req: ReturnType<typeof listRequests>[number],
   options: CollectionRunOptions & { sslVerify?: boolean; timeoutMs?: number; followRedirects?: boolean; proxyUrl?: string },
-  iteration: number
+  iteration: number,
+  envOverride?: KeyValue[],
+  dataRow?: number
 ): Promise<CollectionRunResult> {
   const collections = listCollections()
   const activeEnv = getActiveEnvironment()
-  const envVars = activeEnv?.variables || []
+  const envVars = envOverride ?? activeEnv?.variables ?? []
 
   if (req.protocol !== 'http' && req.protocol !== 'graphql') {
     return {
@@ -43,7 +47,8 @@ async function runSingleRequest(
       passed: false,
       error: `Skipped (${req.protocol} not supported in runner)`,
       durationMs: 0,
-      iteration
+      iteration,
+      dataRow
     }
   }
 
@@ -117,7 +122,8 @@ async function runSingleRequest(
       passed,
       error: testResults.find((t) => !t.passed)?.error,
       durationMs: response.durationMs,
-      iteration
+      iteration,
+      dataRow
     }
   } catch (e) {
     return {
@@ -127,7 +133,8 @@ async function runSingleRequest(
       passed: false,
       error: e instanceof Error ? e.message : String(e),
       durationMs: 0,
-      iteration
+      iteration,
+      dataRow
     }
   }
 }
@@ -147,18 +154,35 @@ export async function runCollection(
     .sort((a, b) => a.sortOrder - b.sortOrder)
 
   const results: CollectionRunResult[] = []
+  const dataRows = options.dataFilePath
+    ? parseRunnerDataFile(options.dataFilePath, options.dataFileFormat)
+    : [null]
 
   for (let iteration = 1; iteration <= iterations; iteration++) {
-    for (const req of allRequests) {
-      const result = await runSingleRequest(req, options, iteration)
-      results.push(result)
+    for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
+      const dataRowVars = dataRows[rowIndex]
+      const activeEnv = getActiveEnvironment()
+      const mergedEnv = dataRowVars
+        ? mergeDataRow(activeEnv?.variables || [], dataRowVars)
+        : activeEnv?.variables
 
-      if (!result.passed && options.stopOnFailure) {
-        return results
-      }
+      for (const req of allRequests) {
+        const result = await runSingleRequest(
+          req,
+          options,
+          iteration,
+          mergedEnv,
+          dataRows.length > 1 || dataRowVars ? rowIndex + 1 : undefined
+        )
+        results.push(result)
 
-      if (delayMs > 0) {
-        await delay(delayMs)
+        if (!result.passed && options.stopOnFailure) {
+          return results
+        }
+
+        if (delayMs > 0) {
+          await delay(delayMs)
+        }
       }
     }
   }

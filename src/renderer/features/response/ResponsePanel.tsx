@@ -43,6 +43,7 @@ import {
   formatFullResponseText,
   serializeFullResponse
 } from '../../utils/formatResponse'
+import { diffText, prettyJson } from '../../utils/responseDiff'
 import { COMPACT, formatBytes } from '../../theme/compact'
 import { applyControlledInputChange } from '../../utils/inputSelection'
 
@@ -182,7 +183,7 @@ const ResponseBodyView = memo(
   )
 }))
 
-type ResponseTab = 'body' | 'preview' | 'headers' | 'cookies' | 'tests' | 'console'
+type ResponseTab = 'body' | 'preview' | 'headers' | 'cookies' | 'tests' | 'console' | 'diff'
 
 const TAB_LABELS: Record<ResponseTab, string> = {
   body: 'Body',
@@ -190,7 +191,8 @@ const TAB_LABELS: Record<ResponseTab, string> = {
   headers: 'Headers',
   cookies: 'Cookies',
   tests: 'Tests',
-  console: 'Console'
+  console: 'Console',
+  diff: 'Diff'
 }
 
 const HtmlPreview = memo(function HtmlPreview({
@@ -535,7 +537,13 @@ function ResponseEmptyState() {
   )
 }
 
-function ResponseActions({ response }: { response: HttpResponse }) {
+function ResponseActions({
+  response,
+  onSaveSnapshot
+}: {
+  response: HttpResponse
+  onSaveSnapshot: () => void
+}) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -564,6 +572,11 @@ function ResponseActions({ response }: { response: HttpResponse }) {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.125 }}>
+      <Tooltip title="Save body snapshot for diff">
+        <IconButton size="small" onClick={onSaveSnapshot} aria-label="Save snapshot" sx={COMPACT.iconBtn}>
+          <BoltIcon sx={COMPACT.icon} />
+        </IconButton>
+      </Tooltip>
       <Tooltip title={copied ? 'Copied!' : 'Copy full response'}>
         <IconButton
           size="small"
@@ -594,6 +607,7 @@ export default memo(function ResponsePanel() {
   const scriptLogs = useAppStore((s) => s.scriptLogs)
   const [tab, setTab] = useState<ResponseTab>('body')
   const [queryPanelOpen, setQueryPanelOpen] = useState(false)
+  const [snapshotBody, setSnapshotBody] = useState<string | null>(null)
   const bodyViewRef = useRef<ResponseBodyViewHandle>(null)
   const queryInputRef = useRef<HTMLInputElement>(null)
 
@@ -621,8 +635,9 @@ export default memo(function ResponsePanel() {
     list.push('headers', 'cookies')
     if (testResults.length > 0) list.push('tests')
     if (scriptLogs.length > 0) list.push('console')
+    if (snapshotBody && response?.body) list.push('diff')
     return list
-  }, [showHtmlPreview, testResults.length, scriptLogs.length])
+  }, [showHtmlPreview, testResults.length, scriptLogs.length, snapshotBody, response?.body])
 
   useEffect(() => {
     setTab('body')
@@ -742,7 +757,10 @@ export default memo(function ResponsePanel() {
             ))}
           </Tabs>
         </Box>
-        <ResponseActions response={response} />
+        <ResponseActions
+          response={response}
+          onSaveSnapshot={() => setSnapshotBody(prettyJson(response.body))}
+        />
       </Box>
 
       {tab === 'body' && (
@@ -860,6 +878,33 @@ export default memo(function ResponsePanel() {
               }}
             >
               {scriptLogs.join('\n')}
+            </Box>
+          )}
+          {tab === 'diff' && snapshotBody && response?.body && (
+            <Box sx={{ p: 0.75 }}>
+              {diffText(snapshotBody, prettyJson(response.body)).map((line, i) => (
+                <Typography
+                  key={`${line.type}-${i}`}
+                  variant="caption"
+                  component="div"
+                  sx={{
+                    fontFamily: 'Consolas, monospace',
+                    fontSize: 11,
+                    whiteSpace: 'pre-wrap',
+                    color:
+                      line.type === 'add'
+                        ? 'success.main'
+                        : line.type === 'remove'
+                          ? 'error.main'
+                          : 'text.primary',
+                    bgcolor: line.type === 'add' ? 'success.light' : line.type === 'remove' ? 'error.light' : 'transparent',
+                    opacity: line.type === 'same' ? 0.8 : 1
+                  }}
+                >
+                  {line.type === 'add' ? '+ ' : line.type === 'remove' ? '- ' : '  '}
+                  {line.text}
+                </Typography>
+              ))}
             </Box>
           )}
         </Box>

@@ -30,6 +30,7 @@ import PushPinIcon from '@mui/icons-material/PushPin'
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import TuneIcon from '@mui/icons-material/Tune'
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
@@ -37,6 +38,7 @@ import { useAppStore } from '../../stores/appStore'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import PromptDialog from '../../components/PromptDialog'
 import CollectionVariablesDialog from './CollectionVariablesDialog'
+import CollectionDescriptionDialog from './CollectionDescriptionDialog'
 import CollectionRunnerDialog from './CollectionRunnerDialog'
 import SidebarPanelHeader from '../../components/SidebarPanelHeader'
 import { useCollectionDragDrop } from './useCollectionDragDrop'
@@ -273,6 +275,7 @@ export default function CollectionsPanel() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [newCollectionOpen, setNewCollectionOpen] = useState(false)
   const [variablesCollection, setVariablesCollection] = useState<CollectionModel | null>(null)
+  const [descriptionCollection, setDescriptionCollection] = useState<CollectionModel | null>(null)
   const [runnerCollection, setRunnerCollection] = useState<CollectionModel | null>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
 
@@ -707,6 +710,17 @@ export default function CollectionsPanel() {
             <MenuItem
               onClick={() => {
                 setMenuAnchor(null)
+                setDescriptionCollection(menuAnchor.target.item as CollectionModel)
+              }}
+            >
+              <ListItemIcon>
+                <DescriptionOutlinedIcon fontSize="small" />
+              </ListItemIcon>
+              Collection Docs
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenuAnchor(null)
                 setRunnerCollection(menuAnchor.target.item as CollectionModel)
               }}
             >
@@ -815,6 +829,12 @@ export default function CollectionsPanel() {
         open={!!variablesCollection}
         collection={variablesCollection}
         onClose={() => setVariablesCollection(null)}
+      />
+
+      <CollectionDescriptionDialog
+        open={!!descriptionCollection}
+        collection={descriptionCollection}
+        onClose={() => setDescriptionCollection(null)}
       />
 
       <CollectionRunnerDialog
