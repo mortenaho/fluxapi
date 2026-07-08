@@ -1,4 +1,5 @@
 import { createTheme, type ThemeOptions } from '@mui/material/styles'
+import { APP_TOOLTIP_Z_INDEX } from './zIndex'
 
 const primaryLight = {
   main: '#560072',
@@ -368,6 +369,26 @@ const sharedComponents: ThemeOptions['components'] = {
             }
           : {}
     }
+  },
+  MuiTooltip: {
+    defaultProps: {
+      followCursor: true,
+      enterDelay: 300,
+      enterNextDelay: 100,
+      slotProps: {
+        popper: {
+          sx: { zIndex: APP_TOOLTIP_Z_INDEX }
+        }
+      }
+    },
+    styleOverrides: {
+      popper: {
+        zIndex: APP_TOOLTIP_Z_INDEX
+      },
+      tooltip: {
+        pointerEvents: 'none'
+      }
+    }
   }
 }
 
@@ -413,6 +434,9 @@ export function createAppTheme(mode: 'light' | 'dark') {
     },
     shape: {
       borderRadius: 8
+    },
+    zIndex: {
+      tooltip: APP_TOOLTIP_Z_INDEX
     },
     components: {
       ...sharedComponents,

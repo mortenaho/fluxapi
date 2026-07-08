@@ -12,6 +12,7 @@ import {
 import type { Theme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { v4 as uuidv4 } from 'uuid'
 import type { KeyValue } from '@shared/types'
 import { useShallow } from 'zustand/react/shallow'
@@ -23,6 +24,7 @@ import {
   parseVariableSegments,
   type VariableSegment
 } from '../utils/variables'
+import { APP_TOOLTIP_Z_INDEX } from '../theme/zIndex'
 
 const EMPTY_VARS: KeyValue[] = []
 
@@ -39,6 +41,7 @@ interface Props {
 }
 
 const INPUT_PADDING = '4px 8px'
+const TOOLTIP_OFFSET = 12
 
 /** Shared metrics — input caret and highlight layer must match exactly. */
 const INPUT_TEXT_STYLE = {
@@ -60,18 +63,41 @@ function measureTextRun(text: string, style: CSSStyleDeclaration): number {
   return ctx.measureText(text).width
 }
 
-function findVariableAtOffsetX(
-  segments: VariableSegment[],
-  style: CSSStyleDeclaration,
-  offsetX: number
-): { segment: VariableSegment; centerX: number } | null {
-  let x = 0
+function charIndexFromMouse(
+  input: HTMLInputElement,
+  clientX: number,
+  style: CSSStyleDeclaration
+): number {
+  const rect = input.getBoundingClientRect()
+  const padL = parseFloat(style.paddingLeft) || 0
+  const targetX = clientX - rect.left - padL + input.scrollLeft
+  const text = input.value
+
+  if (targetX <= 0 || !text) return 0
+
+  let low = 0
+  let high = text.length
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (measureTextRun(text.slice(0, mid), style) <= targetX) low = mid
+    else high = mid - 1
+  }
+
+  if (low < text.length) {
+    const widthBefore = measureTextRun(text.slice(0, low), style)
+    const widthAfter = measureTextRun(text.slice(0, low + 1), style)
+    if (targetX - widthBefore > widthAfter - targetX) return low + 1
+  }
+
+  return low
+}
+
+function findVariableAtCharIndex(segments: VariableSegment[], charIndex: number): VariableSegment | null {
+  let pos = 0
   for (const seg of segments) {
-    const runWidth = measureTextRun(seg.content, style)
-    if (offsetX >= x && offsetX <= x + runWidth) {
-      return seg.type === 'variable' ? { segment: seg, centerX: x + runWidth / 2 } : null
-    }
-    x += runWidth
+    const end = pos + seg.content.length
+    if (charIndex >= pos && charIndex < end && seg.type === 'variable') return seg
+    pos = end
   }
   return null
 }
@@ -240,17 +266,13 @@ function VariableInput({
   const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
     const input = inputRef.current
     if (!input) return
-    const rect = input.getBoundingClientRect()
     const style = window.getComputedStyle(input)
-    const padL = parseFloat(style.paddingLeft)
-    const offsetX = e.clientX - rect.left - padL + input.scrollLeft
-    const hit = findVariableAtOffsetX(segments, style, offsetX)
-    if (hit) {
-      setHoverSegment(hit.segment)
-      setTooltipAnchor({
-        x: rect.left + padL + hit.centerX - input.scrollLeft,
-        y: rect.bottom
-      })
+    const charIndex = charIndexFromMouse(input, e.clientX, style)
+    const segment = findVariableAtCharIndex(segments, charIndex)
+
+    if (segment) {
+      setHoverSegment(segment)
+      setTooltipAnchor({ x: e.clientX, y: e.clientY })
     } else {
       setHoverSegment(null)
       setTooltipAnchor(null)
@@ -364,7 +386,11 @@ function VariableInput({
           onKeyUp={refreshAutocomplete}
           onClick={refreshAutocomplete}
           onSelect={refreshAutocomplete}
-          onScroll={syncScroll}
+          onScroll={() => {
+            syncScroll()
+            setHoverSegment(null)
+            setTooltipAnchor(null)
+          }}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => {
             setHoverSegment(null)
@@ -385,26 +411,28 @@ function VariableInput({
         />
       </Box>
 
-      {hoverSegment && tooltipAnchor && (
-        <Paper
-          elevation={4}
-          sx={{
-            position: 'fixed',
-            top: tooltipAnchor.y + 6,
-            left: tooltipAnchor.x,
-            transform: 'translateX(-50%)',
-            zIndex: 1400,
-            px: 1.5,
-            py: 1,
-            maxWidth: 360,
-            pointerEvents: 'none'
-          }}
-        >
-          <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', m: 0, fontFamily: 'monospace' }}>
-            {variableTooltip(hoverSegment)}
-          </Typography>
-        </Paper>
-      )}
+      {hoverSegment &&
+        tooltipAnchor &&
+        createPortal(
+          <Paper
+            elevation={4}
+            sx={{
+              position: 'fixed',
+              top: tooltipAnchor.y + TOOLTIP_OFFSET,
+              left: tooltipAnchor.x + TOOLTIP_OFFSET,
+              zIndex: APP_TOOLTIP_Z_INDEX,
+              px: 1.5,
+              py: 1,
+              maxWidth: 360,
+              pointerEvents: 'none'
+            }}
+          >
+            <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', m: 0, fontFamily: 'monospace' }}>
+              {variableTooltip(hoverSegment)}
+            </Typography>
+          </Paper>,
+          document.body
+        )}
 
       <Popper open={acOpen} anchorEl={inputRef.current} placement="bottom-start" style={{ zIndex: 1300 }}>
         <Paper elevation={6} sx={{ mt: 0.5, minWidth: 220, maxWidth: 360, maxHeight: 240, overflow: 'auto' }}>
