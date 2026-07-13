@@ -340,6 +340,35 @@ export default function CollectionsPanel() {
     )
   }, [requests, searchQuery])
 
+  const collectionHasMatch = useMemo(() => {
+    const matchingIds = new Set(filteredRequests.map((r) => r.collectionId).filter(Boolean) as string[])
+    const childrenByParent = new Map<string, string[]>()
+    for (const c of collections) {
+      if (!c.parentId) continue
+      const list = childrenByParent.get(c.parentId)
+      if (list) list.push(c.id)
+      else childrenByParent.set(c.parentId, [c.id])
+    }
+    const cache = new Map<string, boolean>()
+    const hasMatch = (id: string): boolean => {
+      const cached = cache.get(id)
+      if (cached !== undefined) return cached
+      if (matchingIds.has(id)) {
+        cache.set(id, true)
+        return true
+      }
+      const result = (childrenByParent.get(id) ?? []).some(hasMatch)
+      cache.set(id, result)
+      return result
+    }
+    return hasMatch
+  }, [collections, filteredRequests])
+
+  const visibleRootCollections = useMemo(() => {
+    if (!searchQuery) return rootCollections
+    return rootCollections.filter((c) => collectionHasMatch(c.id))
+  }, [rootCollections, searchQuery, collectionHasMatch])
+
   const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: e[id] === false }))
 
   const startRename = (type: 'collection' | 'request', id: string, name: string) => {
@@ -560,9 +589,14 @@ export default function CollectionsPanel() {
   }
 
   const renderCollection = (col: CollectionModel, depth = 0) => {
-    const children = collections.filter((c) => c.parentId === col.id).sort(comparePinnedSortOrder)
+    if (searchQuery && !collectionHasMatch(col.id)) return null
+
+    const children = collections
+      .filter((c) => c.parentId === col.id)
+      .filter((c) => !searchQuery || collectionHasMatch(c.id))
+      .sort(comparePinnedSortOrder)
     const colRequests = filteredRequests.filter((r) => r.collectionId === col.id).sort(comparePinnedSortOrder)
-    const isOpen = expanded[col.id] !== false
+    const isOpen = searchQuery ? true : expanded[col.id] !== false
     const isEditing = editing?.type === 'collection' && editing.id === col.id
 
     return (
@@ -679,12 +713,14 @@ export default function CollectionsPanel() {
         )}
       </Box>
       <List dense disablePadding sx={collectionListSx}>
-        {rootCollections.length === 0 && uncategorized.length === 0 && (
+        {visibleRootCollections.length === 0 && uncategorized.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-            No collections yet. Create one to get started.
+            {searchQuery
+              ? 'No matching requests.'
+              : 'No collections yet. Create one to get started.'}
           </Typography>
         )}
-        {rootCollections.map((c) => renderCollection(c))}
+        {visibleRootCollections.map((c) => renderCollection(c))}
         {uncategorized.length > 0 && (
           <Box data-collection-drop="__none__">
             <Divider sx={{ my: 1 }} />
