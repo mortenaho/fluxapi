@@ -5,24 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lisek — Offline API Client for HTTP, GraphQL, WebSocket &amp; gRPC</title>
   <meta name="description" content="Lisek is a free, offline desktop API client for HTTP, GraphQL, WebSocket, SSE, and gRPC. Mock server, plugins, collections, scripts — no cloud account required.">
-  <meta name="theme-color" content="#0b0f17">
+  <meta name="theme-color" content="#0c1620">
   <meta property="og:title" content="Lisek — Offline API Client">
   <meta property="og:description" content="Test HTTP, GraphQL, WebSocket, gRPC, and SSE locally. Mock server, Bruno/HAR import, scheduled runs, and developer plugins.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/logo.png">
   <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="container nav">
       <a class="brand" href="#top">
-        <img src="assets/logo.png" alt="" width="36" height="36">
+        <img src="assets/logo.png" alt="" width="34" height="34">
         Lisek
       </a>
       <ul class="nav-links">
         <li><a href="#features">Features</a></li>
-        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#gallery">Gallery</a></li>
         <li><a href="#download">Download</a></li>
         <li><a href="https://github.com/mortenaho/Lisek">GitHub</a></li>
       </ul>
@@ -30,117 +33,109 @@
   </header>
 
   <main id="top">
-    <section class="hero">
-      <div class="container">
-        <img class="hero-logo" src="assets/logo.png" alt="Lisek logo">
-        <h1>Test APIs <span>offline</span>, without the cloud</h1>
-        <p>
-          Lisek is a desktop API client for HTTP, GraphQL, WebSocket, SSE, and gRPC.
-          Run collections, mock local endpoints, decode JWTs, and keep everything on your machine.
+    <section class="hero" aria-label="Lisek">
+      <div class="hero-media" aria-hidden="true">
+        <img
+          src="screenshots/lisek-tour.gif"
+          alt=""
+          width="1440"
+          height="900"
+          decoding="async"
+          fetchpriority="high"
+        >
+      </div>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <h1 class="hero-brand">Lisek<em>.</em></h1>
+        <p class="hero-line">
+          Offline API client for HTTP, GraphQL, WebSocket, and gRPC — collections, mocks, and scripts that stay on your machine.
         </p>
-        <div class="badges">
-          <span class="badge">Windows</span>
-          <span class="badge">Linux</span>
-          <span class="badge">Offline-first</span>
-          <span class="badge">MIT License</span>
-          <span class="badge">v1.6.3</span>
-        </div>
-        <div class="actions">
-          <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Download for Windows</a>
-          <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek.AppImage">Download for Linux</a>
-          <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek">View on GitHub</a>
-        </div>
-        <div class="hero-preview" aria-hidden="true">
-          <div class="hero-preview-frame">
-            <img
-              class="hero-preview-gif"
-              src="screenshots/lisek-tour.gif"
-              alt="Lisek application tour"
-              width="960"
-              height="617"
-              loading="eager"
-              decoding="async"
-            >
-          </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#download">Download v1.6.4</a>
+          <a class="btn btn-ghost" href="https://github.com/mortenaho/Lisek">GitHub</a>
         </div>
       </div>
     </section>
 
-    <section id="features" class="features-section">
+    <section id="features" class="band">
       <div class="container">
-        <h2 class="section-title">Everything you need to explore APIs</h2>
-        <p class="section-lead">A focused alternative to cloud-based clients — fast, private, and fully local.</p>
-        <div class="feature-grid">
-          <article class="feature-card">
+        <p class="kicker">Capabilities</p>
+        <h2 class="section-title">One app for every protocol you ship against</h2>
+        <p class="section-lead">
+          A focused desktop client — no account, no sync cloud, no waiting for someone else’s servers.
+        </p>
+        <div class="feature-rail">
+          <article class="feature-row">
             <h3>HTTP &amp; REST</h3>
             <p>All methods, auth, cookies, form-data, JSONPath, binary preview, response diff, and cURL import/export.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>GraphQL</h3>
             <p>Query editor, variables, introspection, and WebSocket subscriptions.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>WebSocket &amp; SSE</h3>
             <p>Live WebSocket log and Server-Sent Events panel for streaming APIs.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>gRPC</h3>
             <p>Import .proto from disk or URL, reflection browser, unary and streaming RPCs.</p>
           </article>
-          <article class="feature-card">
-            <h3>Collections &amp; Runner</h3>
-            <p>Nested folders, CSV/JSON data-driven runs, scheduled requests, and Git folder sync.</p>
+          <article class="feature-row">
+            <h3>Collections</h3>
+            <p>Nested folders, search that hides empty trees, CSV/JSON runs, schedules, and Git folder sync.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>Mock Server</h3>
-            <p>Local HTTP stub with JSON, text, or file responses. Edit routes and test in the browser.</p>
+            <p>Local HTTP stub with JSON, text, or file responses — edit routes and hit them from any client.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>Import / Export</h3>
             <p>Postman, OpenAPI, Insomnia, Bruno, HAR, and workspace backup — all local.</p>
           </article>
-          <article class="feature-card">
+          <article class="feature-row">
             <h3>Plugins</h3>
-            <p>Base64, URL encode, SHA hashes, JWT decode, and AES crypto tools in the sidebar.</p>
+            <p>Base64, URL encode, SHA hashes, JWT decode, and AES tools beside your requests.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="screenshots" class="screenshots-section">
+    <section id="gallery" class="band-tight">
       <div class="container">
-        <h2 class="section-title">Screenshots</h2>
-        <p class="section-lead">Collections, protocols, environments, scripts, and history — in one compact UI.</p>
-        <div class="screenshot-grid">
-          <figure class="screenshot-card">
+        <p class="kicker">Product</p>
+        <h2 class="section-title">Inside the workspace</h2>
+        <p class="section-lead">Scroll sideways through the main surfaces — collections to history.</p>
+        <div class="shot-strip">
+          <figure>
             <img src="screenshots/01-collections.png" alt="Collections sidebar" loading="lazy" width="640" height="400">
             <figcaption>Collections</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/02-http-rest.png" alt="HTTP request and response" loading="lazy" width="640" height="400">
             <figcaption>HTTP / REST</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/03-graphql.png" alt="GraphQL query" loading="lazy" width="640" height="400">
             <figcaption>GraphQL</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/04-websocket.png" alt="WebSocket panel" loading="lazy" width="640" height="400">
             <figcaption>WebSocket</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/05-grpc.png" alt="gRPC request" loading="lazy" width="640" height="400">
             <figcaption>gRPC</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/06-environments.png" alt="Environments dialog" loading="lazy" width="640" height="400">
             <figcaption>Environments</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/07-scripts.png" alt="Pre-request and test scripts" loading="lazy" width="640" height="400">
             <figcaption>Scripts</figcaption>
           </figure>
-          <figure class="screenshot-card">
+          <figure>
             <img src="screenshots/08-history.png" alt="Request history" loading="lazy" width="640" height="400">
             <figcaption>History</figcaption>
           </figure>
@@ -148,65 +143,65 @@
       </div>
     </section>
 
-    <section id="whats-new" class="features-section">
+    <section id="whats-new" class="band">
       <div class="container">
-        <h2 class="section-title">What&rsquo;s new in v1.6.3</h2>
-        <ul class="changelog-list">
-          <li><strong>RPM package</strong> — installable <code>.rpm</code> for Fedora, RHEL, and compatible distros (<code>sudo dnf install ./Lisek.rpm</code>)</li>
-          <li>Includes everything from <strong>v1.6.2</strong>: app Help, update notifications, side-by-side workspace, JSONPath panel, cURL import into collections, and editor fixes</li>
-        </ul>
-      </div>
-    </section>
-
-    <section id="download">
-      <div class="container">
-        <h2 class="section-title">Download</h2>
-        <div class="download-box">
-          <p>
-            Lisek runs on Windows 10/11 and Linux (x64). Pick a build below.
-          </p>
-          <div class="download-platforms">
-            <article class="download-platform">
-              <h3>Windows</h3>
-              <p>Installer or portable zip for Windows 10/11 (x64).</p>
-              <div class="actions">
-                <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Lisek-Setup.exe</a>
-                <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-win.zip">Lisek-win.zip</a>
-              </div>
-            </article>
-            <article class="download-platform">
-              <h3>Linux</h3>
-              <p>AppImage, RPM (Fedora/RHEL), or tar.gz for Linux x64.</p>
-              <div class="actions">
-                <a class="btn btn-primary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek.AppImage">Lisek.AppImage</a>
-                <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek.rpm">Lisek.rpm</a>
-                <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-linux.tar.gz">Lisek-linux.tar.gz</a>
-              </div>
-            </article>
-          </div>
-          <div class="actions" style="margin-top: 1.25rem;">
-            <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek/releases/latest">All releases</a>
-            <a class="btn btn-secondary" href="https://github.com/mortenaho/Lisek#development">Build from source</a>
-          </div>
-          <p class="install-note">
-            If Windows shows <strong>&ldquo;Windows protected your PC&rdquo;</strong>, click
-            <strong>More info</strong>, then <strong>Run anyway</strong>.
-            Lisek is open source and not code-signed yet.
-            On Linux, make the AppImage executable: <code>chmod +x Lisek.AppImage</code>.
-            For RPM: <code>sudo dnf install ./Lisek.rpm</code> (or <code>sudo rpm -i Lisek.rpm</code>).
-          </p>
-          <p class="download-url">
-            Latest release:
-            <a href="https://github.com/mortenaho/Lisek/releases/latest">github.com/mortenaho/Lisek/releases/latest</a>
-          </p>
+        <p class="kicker">Release</p>
+        <h2 class="section-title">What&rsquo;s new in v1.6.4</h2>
+        <div class="news">
+          <p><strong>Smarter collection search</strong> — folders with no matching requests disappear while you type, so the sidebar stays signal-only.</p>
+          <p><strong>Flatpak packaging</strong> — Linux Flatpak manifest for Flathub submission, Electron2 BaseApp, and portal-friendly sandbox flags.</p>
+          <p><strong>Docs site redesign</strong> — brand-forward landing page with a full-bleed product tour and clearer download paths.</p>
         </div>
       </div>
     </section>
 
-    <section>
+    <section id="download" class="band">
+      <div class="container download-layout">
+        <div class="download-copy">
+          <p class="kicker">Get Lisek</p>
+          <h2 class="section-title">Download for Windows &amp; Linux</h2>
+          <p>
+            Free and open source under MIT. Windows 10/11 and Linux x64 builds ship from GitHub Releases.
+            Flatpak is in review on Flathub.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-ink" href="https://github.com/mortenaho/Lisek/releases/latest">All releases</a>
+            <a class="btn btn-line" href="https://github.com/mortenaho/Lisek#development">Build from source</a>
+          </div>
+          <p class="install-note">
+            If Windows shows <strong>&ldquo;Windows protected your PC&rdquo;</strong>, choose
+            <strong>More info</strong> → <strong>Run anyway</strong>. Lisek is not code-signed yet.
+            AppImage: <code>chmod +x Lisek.AppImage</code>.
+            RPM: <code>sudo dnf install ./Lisek.rpm</code>.
+          </p>
+        </div>
+        <div class="platform-list">
+          <article class="platform">
+            <h3>Windows</h3>
+            <p>Installer or portable zip for Windows 10/11 (x64).</p>
+            <div class="actions">
+              <a class="btn btn-ink" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-Setup.exe">Lisek-Setup.exe</a>
+              <a class="btn btn-line" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-win.zip">Lisek-win.zip</a>
+            </div>
+          </article>
+          <article class="platform">
+            <h3>Linux</h3>
+            <p>AppImage, RPM (Fedora/RHEL), or tar.gz for Linux x64.</p>
+            <div class="actions">
+              <a class="btn btn-ink" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek.AppImage">Lisek.AppImage</a>
+              <a class="btn btn-line" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek.rpm">Lisek.rpm</a>
+              <a class="btn btn-line" href="https://github.com/mortenaho/Lisek/releases/latest/download/Lisek-linux.tar.gz">Lisek-linux.tar.gz</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band-tight">
       <div class="container">
+        <p class="kicker">Built with</p>
         <h2 class="section-title">Tech stack</h2>
-        <div class="stack-list">
+        <div class="stack">
           <span>Electron</span>
           <span>React</span>
           <span>MUI</span>
@@ -222,7 +217,7 @@
 
   <footer class="site-footer">
     <div class="container footer-row">
-      <span>MIT License · Lisek v1.6.3</span>
+      <span>MIT License · Lisek v1.6.4</span>
       <span>
         Built by
         <a href="https://mortenaho.ir">Seyed Morteza Hosseini</a>

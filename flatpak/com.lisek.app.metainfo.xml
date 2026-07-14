@@ -57,6 +57,12 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.6.4" date="2026-07-14">
+      <description>
+        <p>Smarter collection search, Flatpak packaging for Flathub, and a redesigned docs site.</p>
+      </description>
+      <url type="details">https://github.com/mortenaho/Lisek/releases/tag/v1.6.4</url>
+    </release>
     <release version="1.6.3" date="2026-07-13">
       <description>
         <p>Linux RPM packages, Help panel, update checks, and workspace UX polish.</p>
